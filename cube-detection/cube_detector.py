@@ -65,7 +65,7 @@ def detect_color(frame, color):
 
     cv2.imwrite("cube-detection/edges_"+color+".jpg", contours)
 
-frame = getFrame('cube-detection/pren_cube_01.mp4')
+frame = getFrame('../resources/pren_cube_01.mp4')
 detect_color(frame.copy(), "blue")
 detect_color(frame.copy(), "yellow")
 detect_color(frame.copy(), "red")
