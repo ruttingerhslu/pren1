@@ -40,5 +40,5 @@ def estimate_rotation_speed(video_path):
     return rpm
 
 
-video_path = "../resources/pren_cub_e01.mp4"
+video_path = "../resources/pren_cube_01.mp4"
 print(f"Estimated RPM: {estimate_rotation_speed(video_path)}")

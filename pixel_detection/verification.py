@@ -18,7 +18,8 @@ def send_cube_configuration_to_server(configuration):
 
     # Den Header für die HTTP-Anfrage setzen.
     headers = {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Auth": "{{token}}"
     }
 
     # Die Konfiguration als JSON konvertieren.
@@ -26,6 +27,7 @@ def send_cube_configuration_to_server(configuration):
 
     # Die Daten an den Server senden und die Antwort erhalten.
     response = requests.post(url, headers=headers, data=data)
+    print(response)
 
     return response
 
