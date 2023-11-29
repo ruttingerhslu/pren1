@@ -24,6 +24,7 @@ def detect_cube_configuration(image_path):
         "config": {}
     }
 
+    # List of pixel gray_front_coordinates (y,x)
     x1 = 760
     x2 = 745
     x3 = 967
@@ -40,7 +41,6 @@ def detect_cube_configuration(image_path):
     y6 = 575
     y7 = 410
 
-    # List of pixel gray_front_coordinates (y,x)
     gray_front_coordinates = [
         (y1, x1),
         (y2, x2),
@@ -52,6 +52,8 @@ def detect_cube_configuration(image_path):
     ]
 
 
+    # List of pixel gray_front_coordinates (y,x)
+    # TODO
     x1 = 760
     x2 = 745
     x3 = 967
@@ -67,8 +69,6 @@ def detect_cube_configuration(image_path):
     y5 = 260
     y6 = 575
     y7 = 410
-
-    # List of pixel gray_front_coordinates (y,x)
     gray_left_coordinates = [
         (y1, x1),
         (y2, x2),
@@ -167,5 +167,3 @@ def get_color_name(hsv_color, colors):
             return color_name
     return "undefined"
 
-image_path = "../cube-detection/img.jpg"
-print(detect_cube_configuration(image_path))
