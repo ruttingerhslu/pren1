@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import cv2
 import numpy as np
 
@@ -5,11 +7,50 @@ from gray_area_orientation_detector import check_pixels_and_save_frame
 from pixel_detection.configuration_detector import detect_cube_configuration
 from pixel_detection.verification import send_cube_configuration_to_server
 
+
+def merge_configs(config, new_config):
+    print('Merging Configs')
+
+    if config == new_config:
+        return new_config
+
+    # Update the time field
+    config_request_body["time"] = datetime.now().isoformat()
+    new_config_data = new_config["config"]
+    print(new_config_data)
+    config_data = config["config"]
+    print(config_data)
+
+    # Update the config field
+    for key, color in new_config["config"].items():
+        if color != 'undefined':
+            config["config"][key] = color
+
+    # TODO add to pixel_coords_dict the configuration_detector which cube configs are 100% found and have priority
+    return config
+
+
 # Path to your video file
-video_path = '../resources/pren_cube_01.mp4'
+video_path = '../resources/pren_cube_02.mp4'
 
 # Initialize the starting timestamp
-current_timestamp = 0
+current_frame = 0
+
+config = {'1': 'undefined',
+          '2': 'undefined',
+          '3': 'undefined',
+          '4': 'undefined',
+          '5': 'undefined',
+          '6': 'undefined',
+          '7': 'undefined',
+          '8': 'undefined'}
+
+config_request_body = {
+    "time": "",
+    "config": config
+}
+
+found_images = 0
 
 # Define the coordinates to check
 pixel_coords_dict = {
@@ -32,42 +73,37 @@ pixel_coords_dict = {
         (1460, 710, 'black')
     ],
     'left': [
-        (635, 270, 'black'),
-        (665, 270, 'gray'),
-        (515, 775, 'gray'),
-        (550, 775, 'black')
+        (670, 280, 'black'),
+        (655, 290, 'gray'),
+        (605, 700, 'gray'),
+        (625, 725, 'black')
     ]
 }
-
-# Define the color range for gray
-lower_gray = np.array([0, 0, 40])
-upper_gray = np.array([180, 40, 220])
-
-
 
 while True:
     # Open the video file
     cap = cv2.VideoCapture(video_path)
-    # Check the video and capture the frame
-    found, timestamp, position = check_pixels_and_save_frame(
+
+    success, frame = cap.read()
+
+    found, frame_number, position = check_pixels_and_save_frame(
         cap,
         pixel_coords_dict,
-        lower_gray,
-        upper_gray,
-        current_timestamp
+        current_frame
     )
     cap.release()
 
     if found:
-        print(f"Frame found at position {position} with timestamp: {timestamp} ms")
+        print(f"Frame found at position {position} at frame: {frame_number}")
 
-        # Update the current timestamp for the next iteration
-        # Adding a small increment to avoid rechecking the same frame
-        current_timestamp = timestamp + 1
+        # Update the current timestamp + advance for the next iteration
+        current_frame = frame_number + 20
     else:
         print("No more frames with all pixels in the specified color ranges were found.")
         break
 
-    config = detect_cube_configuration(f"../resources/cubes_gray_area_{position}_img.jpg")
-    send_cube_configuration_to_server(config)
-
+    new_config = detect_cube_configuration(f"../resources/cubes2_gray_area_{position}_img.jpg")
+    config_request_body = merge_configs(config_request_body, new_config)
+    print(config_request_body)
+    if found_images == 2:
+        send_cube_configuration_to_server(config_request_body)

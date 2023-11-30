@@ -157,6 +157,7 @@ def detect_cube_configuration(image_path):
         config["config"][str(idx)] = dominant_color
 
     print(color_names)
+    print(config)
     return config
 
 
