@@ -2,15 +2,7 @@ import cv2
 import numpy as np
 import datetime
 
-
-def detect_cube_configuration(image_path):
-    img = cv2.imread(image_path)
-
-    # Convert to HSV
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
-    # Define color ranges
-    colors = {
+colors = {
         "red": ([170, 50, 50], [180, 255, 255]),
         "blue": ([110, 50, 50], [130, 255, 255]),
         "yellow": ([20, 50, 50], [40, 255, 255]),
@@ -18,85 +10,64 @@ def detect_cube_configuration(image_path):
         "black": ([70, 10, 20], [80, 20, 30])
     }
 
-    config = {
-        # Format "2023-10-10 17:10:05"
-        "time": str(datetime.datetime.now()),
-        "config": {}
-    }
+config = {
+    # Format "2023-10-10 17:10:05"
+    "time": str(datetime.datetime.now()),
+    "config": {}
+}
 
-    # List of pixel gray_front_coordinates (y,x)
-    x1 = 760
-    x2 = 745
-    x3 = 967
-    x4 = 1132
-    x5 = 1127
-    x6 = 1000
-    x7 = 1010
+# Config Gray top Pixel Coordinates (x/y)
+# TODO
+# x, y, position, 100% sure
+top_cubes_coordinates = [
+    (0, 0, 1, False),  # impossible read
+    (800, 460, 2, True),
+    (965, 535, 3, True),
+    (1140, 435, 4, True),
+    (950, 100, 5, True),
+    (820, 200, 6, True),
+    (965, 300, 7, True),
+    (1120, 150, 8, True)
+]
 
-    y1 = 445
-    y2 = 275
-    y3 = 142
-    y4 = 452
-    y5 = 260
-    y6 = 575
-    y7 = 410
+bottom_cubes_coordinates = [
+    (0, 0, 3, False),  # impossible read
+    (800, 460, 4, True),
+    (965, 535, 1, True),
+    (1140, 435, 2, True),
+    (950, 100, 7, True),
+    (820, 200, 8, True),
+    (965, 300, 5, True),
+    (1120, 150, 6, True)
+]
 
-    gray_front_coordinates = [
-        (y1, x1),
-        (y2, x2),
-        (y3, x3),
-        (y4, x4),
-        (y5, x5),
-        (y6, x6),
-        (y7, x7)
-    ]
+right_cubes_coordinates = [
+    (0, 0, 0, False),  # impossible read
+    (800, 460, 0, True),
+    (965, 535, 0, True),
+    (1140, 435, 0, True),
+    (950, 100, 0, True),
+    (820, 200, 0, True),
+    (965, 300, 0, True),
+    (1120, 150, 0, True)
+]
 
+left_cubes_coordinates = [
+    (0, 0, 0, False),  # impossible read
+    (800, 460, 0, True),
+    (965, 535, 0, True),
+    (1140, 435, 0, True),
+    (950, 100, 0, True),
+    (820, 200, 0, True),
+    (965, 300, 0, True),
+    (1120, 150, 0, True)
+]
 
-    # List of pixel gray_front_coordinates (y,x)
-    # TODO
-    x1 = 760
-    x2 = 745
-    x3 = 967
-    x4 = 1132
-    x5 = 1127
-    x6 = 1000
-    x7 = 1010
+def detect_cube_configuration(image_path, position):
+    img = cv2.imread(image_path)
 
-    y1 = 445
-    y2 = 275
-    y3 = 142
-    y4 = 452
-    y5 = 260
-    y6 = 575
-    y7 = 410
-    gray_left_coordinates = [
-        (y1, x1),
-        (y2, x2),
-        (y3, x3),
-        (y4, x4),
-        (y5, x5),
-        (y6, x6),
-        (y7, x7)
-    ]
-
-    print(f"img size : {img.shape}")
-
-    color_1 = hsv[y1, x1]
-    color_2 = hsv[y2, x2]
-    color_3 = hsv[y3, x3]
-    color_4 = hsv[y4, x4]
-    color_5 = hsv[y5, x5]
-    color_6 = hsv[y6, x6]
-    color_7 = hsv[y7, x7]
-
-    print(f"color black (empty) : {hsv[260, 1127]}")
-    print(color_1)
-    print(color_2)
-    print(color_3)
-    print(color_4)
-    print(color_5)
-    print(color_6)
-    print(color_7)
+    # Convert to HSV
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
     # Config Gray front RGB to Verify Color Ranges
     # left down 167,168,14
@@ -105,7 +76,37 @@ def detect_cube_configuration(image_path):
     # front right 21,9,143
     # front bottom 137,4,9
 
-    # Config Gray front Pixel Coordinates (x/y)
+    # Config Gray bottom Pixel Coordinates (x/y)
+    # left down 760, 445
+    # Left top 745, 275
+    # back top 967, 142
+    # front right 1132, 452
+    # right top 1127, 260
+    # front bottom 1000, 575
+    # front top 1010, 410
+
+
+
+    # left down 760, 445
+    # Left top 745, 275
+    # back top 967, 142
+    # front right 1132, 452
+    # right top 1127, 260
+    # front bottom 1000, 575
+    # front top 1010, 410
+
+    # Config Gray left Pixel Coordinates (x/y)
+    # TODO
+    # left down 760, 445
+    # Left top 745, 275
+    # back top 967, 142
+    # front right 1132, 452
+    # right top 1127, 260
+    # front bottom 1000, 575
+    # front top 1010, 410
+
+    # Config Gray right Pixel Coordinates (x/y)
+    # TODO
     # left down 760, 445
     # Left top 745, 275
     # back top 967, 142
@@ -117,8 +118,18 @@ def detect_cube_configuration(image_path):
     # Create a list to store the colors
     color_names = []
 
-    # Loop over the gray_front_coordinates and check the colors
-    for (y, x) in gray_front_coordinates:
+    coordinates_to_check = None
+    if position == "top":
+        coordinates_to_check = top_cubes_coordinates
+    elif position == "bottom":
+        coordinates_to_check = bottom_cubes_coordinates
+    elif position == "left":
+        coordinates_to_check = left_cubes_coordinates
+    elif position == "right":
+        coordinates_to_check = right_cubes_coordinates
+
+    # Loop over the front_coordinates and check the colors
+    for (y, x, position) in coordinates_to_check:
         # Get the HSV color of the pixel
         hsv_color = hsv[y, x]
 

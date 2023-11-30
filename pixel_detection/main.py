@@ -102,7 +102,7 @@ while True:
         print("No more frames with all pixels in the specified color ranges were found.")
         break
 
-    new_config = detect_cube_configuration(f"../resources/cubes2_gray_area_{position}_img.jpg")
+    new_config = detect_cube_configuration(f"../resources/cubes2_gray_area_{position}_img.jpg", position)
     config_request_body = merge_configs(config_request_body, new_config)
     print(config_request_body)
     if found_images == 2:
