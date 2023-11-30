@@ -33,7 +33,7 @@ def find_contours(edges):
     return image
 
 
-frame = getFrame('../resources/pren_cube_01.mp4')
+frame = getFrame('../resources/pren_cube_03.mp4')
 gray1 = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
 gray2 = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 edge_detect1 = edge_detection(gray1)
