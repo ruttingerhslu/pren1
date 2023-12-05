@@ -9,25 +9,19 @@ from pixel_detection.verification import send_cube_configuration_to_server
 
 from pixel_detection.constants import *
 
-def merge_configs(config, new_config):
-    print('Merging Configs')
 
+def merge_configs(config, new_config):
     if config == new_config:
         return new_config
 
     # Update the time field
     config_request_body["time"] = datetime.now().isoformat()
-    new_config_data = new_config["config"]
-    print(new_config_data)
-    config_data = config["config"]
-    print(config_data)
 
     # Update the config field
     for key, color in new_config["config"].items():
         if color != '':
             config["config"][key] = color
 
-    # TODO add to pixel_coords_dict the configuration_detector which cube configs are 100% found and have priority
     return config
 
 
@@ -36,14 +30,14 @@ current_frame = 0
 
 found_images = 0
 
-config = {'1': '',
-          '2': '',
-          '3': '',
-          '4': '',
-          '5': '',
-          '6': '',
-          '7': '',
-          '8': ''}
+config = {'1': 'undefined',
+          '2': 'undefined',
+          '3': 'undefined',
+          '4': 'undefined',
+          '5': 'undefined',
+          '6': 'undefined',
+          '7': 'undefined',
+          '8': 'undefined'}
 
 config_request_body = {
     "time": "",
@@ -52,6 +46,14 @@ config_request_body = {
 
 start_time = datetime.now()
 print(f"Starttimestamp: {start_time}")
+
+
+def clean_config(pre_check_config):
+    # Remove all undefined colors the config field
+    for key, color in pre_check_config["config"].items():
+        if color == 'undefined':
+            pre_check_config["config"][key] = ''
+
 
 while True:
     # Open the video file
@@ -67,8 +69,6 @@ while True:
     cap.release()
 
     if found:
-        print(f"Frame found at position {position} at frame: {frame_number}")
-
         # Update the current timestamp + advance for the next iteration
         current_frame = frame_number + 90
         found_images += 1
@@ -78,11 +78,11 @@ while True:
 
     new_config = detect_cube_configuration(f"../resources/cubes_gray_area_{position}.jpg", position)
     config_request_body = merge_configs(config_request_body, new_config)
-    print(config_request_body)
-    print(f"found Images: {found_images}")
     if found_images == 4:
+        clean_config(config_request_body)
         send_cube_configuration_to_server(config_request_body)
         end_time = datetime.now()
         time_used = end_time - start_time
         print(f"Endtimestamp: {end_time}")
         print(f"Time needed to complete: {time_used}")
+        break

@@ -9,13 +9,17 @@ colors = {
     "black": ([70, 10, 20], [80, 20, 30])
 }
 
+orientation_positions_map = {"right": [1, 3, 4], "left": [1, 2, 3], "top": [2, 3, 4], "bottom": [1, 2, 4]}
+orientation_top_positions_map = {"right": [6], "left": [8], "top": [5], "bottom": [7]}
+
+# Json Config to send to server for verification
 config = {
     # Format "2023-10-10 17:10:05"
     "time": str(datetime.now()),
     "config": {}
 }
 
-# Config Gray top Pixel Coordinates (x/y)
+# Config Cube Pixel Coordinates (x/y)
 # x, y, position, 100% sure
 top_cubes_coordinates = [
     (0, 0, 1, False),  # impossible read
@@ -44,23 +48,22 @@ right_cubes_coordinates = [
     (800, 460, 3, True),
     (965, 535, 4, True),
     (1140, 435, 1, True),
-    (950, 100, 6, True),
+    (950, 150, 6, True),
     (820, 200, 7, True),
     (965, 300, 8, True),
     (1120, 150, 5, True)
 ]
 
 left_cubes_coordinates = [
-    (0, 0, 2, False),  # impossible read
+    (0, 0, 4, False),  # impossible read
     (800, 460, 1, True),
-    (965, 535, 3, True),
-    (1140, 435, 4, True),
+    (965, 535, 2, True),
+    (1140, 435, 3, True),
     (950, 100, 8, True),
     (820, 200, 5, True),
     (965, 300, 6, True),
     (1120, 150, 7, True)
 ]
-
 
 # Main Constants #####
 
@@ -102,10 +105,10 @@ base_url_test_server_http = "http://18.192.48.168:5000"
 base_url_test_server_https = "https://18.192.48.168:5000"
 base_url_prod_server = "https://18.192.48.168:5000"
 endpoint = "/cubes/team09"
-# Die URL des Testservers und des gewünschten Endpunkts.
+# URL for Verification
 url = base_url_test_server_http + endpoint
 
-# Den Header für die HTTP-Anfrage setzen.
+# HTTP Headers
 headers = {
     "Content-Type": "application/json",
     "Auth": token

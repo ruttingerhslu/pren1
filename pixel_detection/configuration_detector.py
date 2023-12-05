@@ -5,6 +5,7 @@ from pixel_detection.constants import *
 
 fixed_positions = []
 
+
 # If position < 5 and priority == True
 # then we can identify the lower three front cubes precisely
 # Need to also check if the color is available, or it's gray/black/brown -> in that case keep undefined/""
@@ -14,13 +15,6 @@ def detect_cube_configuration(image_path, orientation):
 
     # Convert to HSV
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
-    # Config Gray front RGB to Verify Color Ranges
-    # left down 167,168,14
-    # Left top 140,5,9
-    # back top 221,226,36
-    # front right 21,9,143
-    # front bottom 137,4,9
 
     # Create a list to store the colors
     color_names = []
@@ -40,40 +34,20 @@ def detect_cube_configuration(image_path, orientation):
         # Get the HSV color of the pixel
         hsv_color = hsv[y, x]
 
+        config_position_exists = str(cube_config_position) in config["config"]
+
         # Determine the color name
         color_name = get_color_name(hsv_color)
 
-        # Print the result
-        print(f"The color at pixel ({x}, {y}) is: {color_name}")
+        if cube_config_position in orientation_positions_map.get(orientation):
+            # set the value in the config
+            if color_name not in ["black", "brown"] and not config_position_exists:
+                config["config"][str(cube_config_position)] = color_name
 
-        # Append the color name to the list
-        color_names.append(color_name)
-
-    # Iterate through each cube's region
-    for idx in range(1, 9):
-        # ROIs for each cube as roi_list
-        # roi = roi_list[idx-1]
-
-        # Remove
-        roi = hsv
-
-        max_color_count = 0
-        dominant_color = ""
-
-        for color, (lower, upper) in colors.items():
-            lower = np.array(lower)
-            upper = np.array(upper)
-
-            mask = cv2.inRange(roi, lower, upper)
-            color_count = np.sum(mask) / 255.0
-
-            if color_count > max_color_count:
-                max_color_count = color_count
-                dominant_color = color
-
-        config["config"][str(idx)] = dominant_color
-
-    print(config)
+        if cube_config_position in orientation_top_positions_map.get(orientation):
+            # set the value in the config
+            if color_name not in ["black", "brown"] and not config_position_exists:
+                config["config"][str(cube_config_position)] = color_name
     return config
 
 
@@ -82,5 +56,4 @@ def get_color_name(hsv_color):
     for color_name, (lower, upper) in colors.items():
         if np.all(lower <= hsv_color) and np.all(hsv_color <= upper):
             return color_name
-    return ""
-
+    return ''

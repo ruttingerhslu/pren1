@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 
-
 found_orientations = []
 
 
@@ -50,7 +49,7 @@ def check_pixels_and_save_frame(cap, pixel_coords_dict, start_frame_number=0):
                 # Frame matched, save it and return information
                 image_name = f'../resources/cubes_gray_area_{position}.jpg'
                 cv2.imwrite(image_name, frame)
-                print(f"Match found at position {position} in frame {frame_count}.")
+                print(f"Match found with gray position {position}.")
                 print(f"Frame saved as {image_name}")
                 cap.release()
                 return True, frame_count, position
