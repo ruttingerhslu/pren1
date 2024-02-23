@@ -16,9 +16,6 @@ def detect_cube_configuration(image_path, orientation):
     # Convert to HSV
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    # Create a list to store the colors
-    color_names = []
-
     coordinates_to_check = None
     if orientation == "top":
         coordinates_to_check = top_cubes_coordinates
@@ -33,9 +30,7 @@ def detect_cube_configuration(image_path, orientation):
     for (x, y, cube_config_position, priority) in coordinates_to_check:
         # Get the HSV color of the pixel
         hsv_color = hsv[y, x]
-
         config_position_exists = str(cube_config_position) in config["config"]
-
         # Determine the color name
         color_name = get_color_name(hsv_color)
 
