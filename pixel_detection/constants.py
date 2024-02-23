@@ -10,6 +10,8 @@ colors = {
 }
 
 orientation_positions_map = {"right": [1, 3, 4], "left": [1, 2, 3], "top": [2, 3, 4], "bottom": [1, 2, 4]}
+
+## Could define front right/left as well -> pixel coords required
 orientation_top_positions_map = {"right": [6], "left": [8], "top": [5], "bottom": [7]}
 
 # Json Config to send to server for verification
@@ -68,7 +70,7 @@ left_cubes_coordinates = [
 # Main Constants #####
 
 # Path to your video file
-video_path = '../resources/pren_cube_03.mp4'
+video_path = '../resources/pren_cube_01.mp4'
 
 # Define the coordinates to check
 pixel_coords_dict = {
