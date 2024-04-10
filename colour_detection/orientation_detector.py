@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import math
 
 def getFrame(file, frame):
     cap = cv2.VideoCapture(file)
@@ -42,5 +43,32 @@ def getMeanAngle(image):
     mean_angle = np.mean(angles)
     return mean_angle
 
+
+def calculateCoordinates(angle, image):
+    a = 50
+    b = 70
+
+    # as quadrant is 90 degrees, and the 'angle' is the middle of the quadrant, to get the edges just add/subtract 45
+    angle_right = angle - 45
+    angle_left = angle + 45
+
+    center_x = image.shape[1] // 2
+    center_y = image.shape[0] // 2
+
+    new_x = int(center_x - 200)
+    # new_y = int(center_y - 20 * math.tan(angle_right))
+    new_y = center_y
+
+    cv2.circle(image, (center_x, center_y), 5, (0, 255, 0), -1)
+
+    cv2.circle(image, (new_x, new_y), 5, (0, 255, 0), -1)
+
+    # cv2.line(image, (new_x, new_y), (center_x, center_y), (255, 0, 0))
+
+    cv2.imwrite('img.png', image)
+    return 0
+
+frame = 1000
 image = getFrame('../resources/pren_cube_01.mp4', frame)
 print("Mean angle: ", getMeanAngle(image))
+print(calculateCoordinates(getMeanAngle(image), image))
