@@ -105,7 +105,7 @@ pixel_coords_dict = {
 token = ""
 base_url_test_server_http = "http://52.58.217.104:5000"
 base_url_test_server_https = "https://18.192.48.168:5000"
-base_url_prod_server = "https://18.192.48.168:5000"
+base_url_prod_server = "https://oawz3wjih1.execute-api.eu-central-1.amazonaws.com"
 endpoint = "/cubes/team09"
 # URL for Verification
 url = base_url_test_server_http + endpoint

@@ -1,7 +1,7 @@
 import requests
 import json
 
-from pixel_detection.constants import *
+from constants.constants import *
 
 
 def send_cube_configuration_to_server(configuration):

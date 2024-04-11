@@ -5,10 +5,10 @@ import numpy as np
 
 from gray_area_orientation_detector import check_pixels_and_save_frame
 from pixel_detection.configuration_detector import detect_cube_configuration
-from pixel_detection.verification import send_cube_configuration_to_server, send_end_signal_to_server, \
+from verification.verification import send_cube_configuration_to_server, send_end_signal_to_server, \
     send_start_signal_to_server
 
-from pixel_detection.constants import *
+from constants.constants import *
 from retrieve_video.rtsp_retrieval import get_camera_profile
 
 
