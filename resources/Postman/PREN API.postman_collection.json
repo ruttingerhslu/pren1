@@ -1,0 +1,112 @@
+{
+	"info": {
+		"_postman_id": "c480e8ee-aa86-46e8-99d8-c1f80b6fe6ce",
+		"name": "PREN API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "11992786"
+	},
+	"item": [
+		{
+			"name": "Send Start",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "{{server}}/cubes/{{team}}/start",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"cubes",
+						"{{team}}",
+						"start"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Send End",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "{{server}}/cubes/{{team}}/end",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"cubes",
+						"{{team}}",
+						"end"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Send Config",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"time\": \"2023-10-10 17:10:05\",\n  \"config\": {\n    \"1\": \"red\",\n    \"2\": \"blue\",\n    \"3\": \"red\",\n    \"4\": \"yellow\",\n    \"5\": \"\",\n    \"6\": \"\",\n    \"7\": \"yellow\",\n    \"8\": \"red\"\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server}}/cubes/{{team}}/config",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"cubes",
+						"{{team}}",
+						"config"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Current Times/Configurations",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server}}/cubes/{{team}}",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"cubes",
+						"{{team}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Test",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server}}/cubes/",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"cubes",
+						""
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

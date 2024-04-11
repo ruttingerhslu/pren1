@@ -5,9 +5,11 @@ import numpy as np
 
 from gray_area_orientation_detector import check_pixels_and_save_frame
 from pixel_detection.configuration_detector import detect_cube_configuration
-from pixel_detection.verification import send_cube_configuration_to_server
+from pixel_detection.verification import send_cube_configuration_to_server, send_end_signal_to_server, \
+    send_start_signal_to_server
 
 from pixel_detection.constants import *
+from retrieve_video.rtsp_retrieval import get_camera_profile
 
 
 def merge_configs(config, new_config):
@@ -46,6 +48,7 @@ config_request_body = {
 
 start_time = datetime.now()
 print(f"Starttimestamp: {start_time}")
+send_start_signal_to_server()
 
 
 def clean_config(pre_check_config):
@@ -55,9 +58,12 @@ def clean_config(pre_check_config):
             pre_check_config["config"][key] = ''
 
 
+cap = get_camera_profile('147.88.48.131', 'pren', '463997',
+                    'pren_profile_med')
 while True:
     # Open the video file
-    cap = cv2.VideoCapture(video_path)
+#    cap = cv2.VideoCapture(video_path)
+
 
     success, frame = cap.read()
 
@@ -70,7 +76,7 @@ while True:
 
     if found:
         # Update the current timestamp + advance for the next iteration
-        current_frame = frame_number + 90
+        # current_frame = frame_number + 90
         found_images += 1
     else:
         print("No more frames with all pixels in the specified color ranges were found.")
@@ -81,6 +87,7 @@ while True:
     if found_images == 4:
         clean_config(config_request_body)
         send_cube_configuration_to_server(config_request_body)
+        send_end_signal_to_server()
         end_time = datetime.now()
         time_used = end_time - start_time
         print(f"Endtimestamp: {end_time}")
