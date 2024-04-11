@@ -36,5 +36,5 @@ def get_camera_profile(ip_address, username, password, profile):
     return cap
 
 
-#open_camera_profile('147.88.48.131', 'pren', '463997',
-#                    'pren_profile_med')
+open_camera_profile('147.88.48.131', 'pren', '463997',
+                    'pren_profile_med')
