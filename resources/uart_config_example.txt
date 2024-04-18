@@ -1,0 +1,38 @@
+1. Example
+
+Config to send to Server:
+{
+  "time": "2023-10-10 17:10:05",
+  "config": {
+    "1": "red",
+    "2": "blue",
+    "3": "red",
+    "4": "yellow",
+    "5": "",
+    "6": "",
+    "7": "yellow",
+    "8": "red"
+  }
+}
+
+Config to send to microcontroller:
+RBRYEEYR
+
+2. Example
+
+Current local Config:
+{
+  "config": {
+    "1": "undefined",
+    "2": "blue",
+    "3": "undefined",
+    "4": "yellow",
+    "5": "undefined",
+    "6": "undefined",
+    "7": "undefined",
+    "8": "undefined"
+  }
+}
+
+Config to send to microcontroller:
+UBUYUUUU

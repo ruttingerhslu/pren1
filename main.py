@@ -1,7 +1,7 @@
 import serial
 import time
 
-from verification.verification import send_end_signal_to_server
+from verification.verification import send_end_signal_to_server, send_start_signal_to_server
 
 ser = serial.Serial('/dev/serial0', 9600, timeout=1)
 
@@ -10,6 +10,7 @@ while True:
         data = ser.readline().decode('utf-8').rstrip()
         print("Empfangene Daten:", data)
         if data == "start":
+            send_start_signal_to_server()
             print("Start Program")
         if data == "ok":
             print("sent config has been built")

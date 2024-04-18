@@ -21,6 +21,16 @@ config = {
     "config": {}
 }
 
+# Mapping of colors to their corresponding initials for UART Message to MicroController
+uart_color_mapping = {
+    "yellow": "Y",
+    "blue": "B",
+    "red": "R",
+    "": "E",
+    "undefined": "U"
+}
+
+
 # Config Cube Pixel Coordinates (x/y)
 # x, y, position, 100% sure
 top_cubes_coordinates = [

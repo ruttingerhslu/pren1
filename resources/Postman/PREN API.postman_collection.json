@@ -9,8 +9,17 @@
 		{
 			"name": "Send Start",
 			"request": {
+				"auth": {
+					"type": "noauth"
+				},
 				"method": "POST",
-				"header": [],
+				"header": [
+					{
+						"key": "Auth",
+						"value": "{{token}}",
+						"type": "text"
+					}
+				],
 				"url": {
 					"raw": "{{server}}/cubes/{{team}}/start",
 					"host": [
@@ -29,7 +38,13 @@
 			"name": "Send End",
 			"request": {
 				"method": "POST",
-				"header": [],
+				"header": [
+					{
+						"key": "Auth",
+						"value": "{{token}}",
+						"type": "text"
+					}
+				],
 				"url": {
 					"raw": "{{server}}/cubes/{{team}}/end",
 					"host": [
@@ -48,7 +63,13 @@
 			"name": "Send Config",
 			"request": {
 				"method": "POST",
-				"header": [],
+				"header": [
+					{
+						"key": "Auth",
+						"value": "{{token}}",
+						"type": "text"
+					}
+				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\n  \"time\": \"2023-10-10 17:10:05\",\n  \"config\": {\n    \"1\": \"red\",\n    \"2\": \"blue\",\n    \"3\": \"red\",\n    \"4\": \"yellow\",\n    \"5\": \"\",\n    \"6\": \"\",\n    \"7\": \"yellow\",\n    \"8\": \"red\"\n  }\n}",
@@ -75,6 +96,9 @@
 		{
 			"name": "Get Current Times/Configurations",
 			"request": {
+				"auth": {
+					"type": "noauth"
+				},
 				"method": "GET",
 				"header": [],
 				"url": {
@@ -96,13 +120,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{server}}/cubes/",
+					"raw": "{{server}}/cubes",
 					"host": [
 						"{{server}}"
 					],
 					"path": [
-						"cubes",
-						""
+						"cubes"
 					]
 				}
 			},
