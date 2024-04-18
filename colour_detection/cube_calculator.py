@@ -1,3 +1,4 @@
+from datetime import datetime
 import cv2
 import numpy as np
 import math
@@ -16,6 +17,8 @@ class CubeCalculator:
         self._gray = np.array([0, 0, 0])
         self._center_x = 0
         self._center_y = 0
+        self._curr_config = {}
+        self._curr_direction = ""
         self.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
 
     def open_camera_profile(self, ip_address, username, password, profile):
@@ -35,16 +38,25 @@ class CubeCalculator:
                 break
             self._img = frame
             angle = self.getMeanAngle()
+
+            # check if angle is close to 0, 90, etc.
             if (math.isclose(abs(angle) % 90, 0, abs_tol = 1) or math.isclose(angle, 0, abs_tol = 1)):
                 # cv2.imshow('good angle', frame)
                 # print(self.getDirection(angle))
                 direction = self.getDirection(angle)
-                points = self.getCubePoints()
-                arrangement = self.getArrangement(direction, points)
-                # print(arrangement)
-                # cv2.imwrite('arrangement.png', self._img)
-                config = self.getConfig(arrangement)
-                # print(config)
+                if direction != self._curr_direction:
+                    self._curr_direction = direction
+                    points = self.getCubePoints()
+                    arrangement = self.getArrangement(points)
+                    # print(arrangement)
+                    # cv2.imwrite('arrangement.png', self._img)
+                    config = self.getConfig(arrangement)
+                    curr_config = self._curr_config
+                    for key in config:
+                        if key not in curr_config:
+                            curr_config[key] = config[key]
+                    self._curr_config = {k: curr_config[k] for k in sorted(curr_config)}
+                    self.sendConfig()
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
@@ -103,15 +115,15 @@ class CubeCalculator:
 
         points = [[
                 (self._center_x - a, self._center_y), # left bottom
-                (self._center_x, int(self._center_y + a/2)), # mid bottom
+                (self._center_x, int(self._center_y + a / 2)), # mid bottom
                 (self._center_x + a, self._center_y), # right bottom
                 (), #UNKONWN (behind bottom)
             ],
             [
-                (self._center_x - a, self._center_y - a), # left top
+                (self._center_x - a, int(self._center_y - a * 1.5)), # left top
                 (self._center_x, self._center_y - a), # mid top (NOT CERTAIN)
-                (self._center_x + a, self._center_y - a), # right top
-                (self._center_x, self._center_y - 2*a), # top top
+                (self._center_x + a, int(self._center_y - a * 1.5)), # right top
+                (self._center_x, self._center_y - a * 2), # top top
         ]]
 
         # for layer in points:
@@ -120,10 +132,10 @@ class CubeCalculator:
         return points
         # cv2.imshow('test', image)
 
-    def getArrangement(self, orientation, points):
+    def getArrangement(self, points):
         order = []
         arrangement = []
-        match (orientation):
+        match (self._curr_direction):
             case 'west':
                 order = [0, 1, 2, 3]
             case 'south':
@@ -146,7 +158,7 @@ class CubeCalculator:
                 config.update({ index : self.mapColor(point) })
                 cv2.circle(image, tuple(point), 5, (0, 255, 0), -1)
                 cv2.putText(image, str(index), tuple(point), cv2.FONT_HERSHEY_SIMPLEX, 1, 2)
-        cv2.imshow('img', image)
+        # cv2.imshow('img', image)
         return config
     
     def mapColor(self, point):
@@ -159,8 +171,18 @@ class CubeCalculator:
             lower = np.array(lower)
             upper = np.array(upper)
             if np.all(hsv_point >= lower) and np.all(hsv_point <= upper):
-                return color
-        return "Unknown"
+                if (color.startswith('red')):
+                    return 'red'
+                else:
+                    return color
+        return ""
+
+    def sendConfig(self):
+        configuration = {
+            "time": str(datetime.now()),
+            "config": self._curr_config
+        }
+        print(configuration)
 
 
 if __name__ == '__main__':
