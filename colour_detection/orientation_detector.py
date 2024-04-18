@@ -68,9 +68,10 @@ def getCenterPoint(frame, color):
 
 def getMeanAngle(image):
     lower_gray = np.array([180, 175, 170], dtype=np.uint8)
-    upper_gray = np.array([240, 220, 200], dtype=np.uint8)
+    upper_gray = np.array([240, 220, 220], dtype=np.uint8)
 
     mask_gray = cv2.inRange(image, lower_gray, upper_gray)
+    cv2.imshow('mask', mask_gray)
     contours, _ = cv2.findContours(mask_gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     angles = []
@@ -97,7 +98,7 @@ def getMeanAngle(image):
                 cv2.line(image, (centroid_x, centroid_y), (image_center_x, image_center_y), (255, 0, 0), 1)
     mean_angle = np.mean(angles)
     cv2.putText(image, str(mean_angle), (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, 2)
-    cv2.imshow('frame', image)
+    # cv2.imshow('frame', image)
     return mean_angle
 
 def calc_points(image):

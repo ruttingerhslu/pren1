@@ -2,13 +2,6 @@ import cv2
 import numpy as np
 import math
 
-directions = {
-    "north": (30, 120),
-    "east": ((0, 30), (330, 360)),
-    "south": (210, 300),
-    "west": (150, 240)
-}
-
 class CubeCalculator:
     def __init__(self) -> None:
         self._img = None
@@ -32,7 +25,7 @@ class CubeCalculator:
                 break
             self._img = frame
             angle = self.getMeanAngle()
-            if (math.isclose(abs(angle) % 90, 0, abs_tol = 1) ):
+            if (math.isclose(abs(angle) % 90, 0, abs_tol = 1) or math.isclose(angle, 0, abs_tol = 1)):
                 cv2.imshow('good angle', frame)
                 print(self.getDirection(angle))
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -42,7 +35,7 @@ class CubeCalculator:
         image = self._img
 
         lower_gray = np.array([180, 175, 170], dtype=np.uint8)
-        upper_gray = np.array([240, 220, 200], dtype=np.uint8)
+        upper_gray = np.array([240, 220, 220], dtype=np.uint8)
 
         mask_gray = cv2.inRange(image, lower_gray, upper_gray)
         contours, _ = cv2.findContours(mask_gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -72,19 +65,20 @@ class CubeCalculator:
         # cv2.putText(image, str(mean_angle), (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, 2)
         return mean_angle
 
-
     def getDirection(self, angle):
         if angle < 0:
             angle += 360
-        for direction, angle_range in directions.items():
-            if isinstance(angle_range[0], tuple):
-                if (angle >= angle_range[0][0] and angle <= angle_range[0][1]) or \
-                    (angle >= angle_range[1][0] and angle <= angle_range[1][1]):
-                    return direction
-            else:
-                if angle >= angle_range[0] and angle <= angle_range[1]:
-                    return direction
-        return "Unknown"
+
+        if angle >= 30 and angle <= 120:
+            return 'north'
+        elif (angle >= 0 and angle <= 30) or (angle >= 330 and angle <= 360):
+            return 'east'
+        elif angle >= 210 and angle <= 300:
+            return 'south'
+        elif angle >= 150 and angle <= 240:
+            return 'west'
+        else:
+            return 'unkown'
 
 if __name__ == '__main__':
     CubeCalculator()
