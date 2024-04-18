@@ -68,6 +68,7 @@ def detect_color(frame, color):
     edges = edge_detection(color_mask)
     contours = find_contours(frame, edges)
 
+    cv2.imshow('detected cubes', contours)
     return color_mask
     # cv2.imwrite("cube-detection/edges_"+color+".jpg", contours)
 
@@ -131,8 +132,8 @@ def open_camera_profile(ip_address, username, password, profile):
             print('Warning: unable to read next frame')
             break
         # getMeanAngle(frame)
-        # detect_color(frame, "blue")
-        getCenterPoint(frame)
+        detect_color(frame, "yellow")
+        # getCenterPoint(frame)
         
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break

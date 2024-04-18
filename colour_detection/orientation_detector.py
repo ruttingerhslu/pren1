@@ -67,19 +67,18 @@ def getCenterPoint(frame, color):
     cv2.imshow('frame', frame)
 
 def getMeanAngle(image):
-    lower_gray = np.array([175, 175, 175], dtype=np.uint8)
-    upper_gray = np.array([255, 255, 255], dtype=np.uint8)
+    lower_gray = np.array([180, 175, 170], dtype=np.uint8)
+    upper_gray = np.array([240, 220, 200], dtype=np.uint8)
 
     mask_gray = cv2.inRange(image, lower_gray, upper_gray)
-
     contours, _ = cv2.findContours(mask_gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     angles = []
 
     image_center_x = image.shape[1] // 2
-    image_center_y = image.shape[0] // 2
+    image_center_y = (image.shape[0] // 2) - 80
 
-    # cv2.circle(image, (image_center_x, image_center_y), 5, (0, 255, 0), -1)
+    cv2.circle(image, (image_center_x, image_center_y), 5, (0, 255, 0), -1)
 
     for contour in contours:
         area = cv2.contourArea(contour)
@@ -95,11 +94,17 @@ def getMeanAngle(image):
                 angle_deg = np.degrees(angle_rad)
 
                 angles.append(angle_deg)
-                # cv2.line(image, (centroid_x, centroid_y), (image_center_x, image_center_y), (255, 0, 0), 1)
-    # cv2.imshow('frame', image)
+                cv2.line(image, (centroid_x, centroid_y), (image_center_x, image_center_y), (255, 0, 0), 1)
     mean_angle = np.mean(angles)
+    cv2.putText(image, str(mean_angle), (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, 2)
+    cv2.imshow('frame', image)
     return mean_angle
 
+def calc_points(image):
+    image_center_x = image.shape[1] // 2
+    image_center_y = (image.shape[0] // 2) - 80
+    cv2.circle(image, (image_center_x, image_center_y), 5, (0, 255, 0), -1)
+    cv2.imshow("image", image)
 
 def calculateCoordinates(angle, image):
     a = 50
@@ -141,8 +146,9 @@ def open_camera_profile(ip_address, username, password, profile):
         if not ret:
             print('Warning: unable to read next frame')
             break
-        # getMeanAngle(frame)
+        getMeanAngle(frame)
         # getCenterPoint(frame, "red")
+        # calc_points(frame)
         
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
