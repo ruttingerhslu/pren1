@@ -1,0 +1,11 @@
+[Unit]
+Description=PREN Cube Detection
+After=network.target
+
+[Service]
+User=pren
+WorkingDirectory=/home/pren/workspace/pren1
+ExecStart=/home/pren/venvs/pren/bin/python /home/pren/workspace/pren1 main.py
+
+[Install]
+WantedBy=multi-user.target
