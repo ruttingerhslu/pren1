@@ -1,4 +1,5 @@
 import serial
+
 from constants.constants import uart_color_mapping
 
 def main(args):

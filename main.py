@@ -1,6 +1,9 @@
 import serial
 import time
 
+import sys
+sys.path.append('modules')
+
 from verification.verification import send_end_signal_to_server, send_start_signal_to_server
 
 ser = serial.Serial('/dev/serial0', 9600, timeout=1)

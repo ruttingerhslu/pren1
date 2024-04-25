@@ -2,9 +2,8 @@
 #!/bin/bash
 
 # Define the path to the virtual environment
-VENV_PATH="../../venvs/pren"
-
 # Define the path to your Python script
+VENV_PATH="../../venvs/pren"
 SCRIPT_PATH="/home/pren/workspace/pren1/cube_detection/cube_calculator.py"
 
 # Activate the virtual environment

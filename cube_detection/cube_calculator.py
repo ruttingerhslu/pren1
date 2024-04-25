@@ -3,6 +3,10 @@ import cv2
 import numpy as np
 import math
 import serial
+
+import sys
+sys.path.append('modules')
+
 from uart.mircocontroller_communicator import send_message_to_micro
 
 color_ranges = {
