@@ -8,7 +8,7 @@
     (), # right top 
     (), # top top
     (), # left top
-}
+},
 # west
 {
     (), # left bottom #1
@@ -19,7 +19,7 @@
     (), # mid top (MIGHT BE WRONG) #6
     (), # right top #7
     (), # top top #8
-}
+},
 # north
 {
     (), # UNKNOWN
@@ -30,7 +30,7 @@
     (), # left top 
     (), # mid top (MIGHT BE WRONG)
     (), # right top
-}
+},
 # east
 {
     (), # right bottom
@@ -41,3 +41,4 @@
     (), # top top 
     (), # left top
     (), # mid top (MIGHT BE WRONG)
+}

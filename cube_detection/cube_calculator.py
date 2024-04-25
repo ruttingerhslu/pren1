@@ -41,15 +41,12 @@ class CubeCalculator:
 
             # check if angle is close to 0, 90, etc.
             if (math.isclose(abs(angle) % 90, 0, abs_tol = 1) or math.isclose(angle, 0, abs_tol = 1)):
-                # cv2.imshow('good angle', frame)
-                # print(self.getDirection(angle))
                 direction = self.getDirection(angle)
                 if direction != self._curr_direction:
+                    cv2.imshow('frame', self._img)
                     self._curr_direction = direction
                     points = self.getCubePoints()
                     arrangement = self.getArrangement(points)
-                    # print(arrangement)
-                    # cv2.imwrite('arrangement.png', self._img)
                     config = self.getConfig(arrangement)
                     curr_config = self._curr_config
                     for key in config:
@@ -73,7 +70,7 @@ class CubeCalculator:
 
         self._center_x = image.shape[1] // 2
         self._center_y = (image.shape[0] // 2) - 80
-        # cv2.circle(image, (self._center_x, self._center_y), 5, (0, 255, 0), -1)
+        cv2.circle(image, (self._center_x, self._center_y), 5, (0, 255, 0), -1)
 
         for contour in contours:
             area = cv2.contourArea(contour)
@@ -89,15 +86,14 @@ class CubeCalculator:
                     angle_deg = np.degrees(angle_rad)
 
                     angles.append(angle_deg)
-                    # cv2.line(image, (centroid_x, centroid_y), (self._center_x, self._center_y), (255, 0, 0), 1)
+                    cv2.line(image, (centroid_x, centroid_y), (self._center_x, self._center_y), (255, 0, 0), 1)
         mean_angle = np.mean(angles)
-        # cv2.putText(image, str(mean_angle), (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, 2)
+        if mean_angle < 0:
+            mean_angle += 360
+        cv2.putText(image, str(mean_angle), (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, 2)
         return mean_angle
 
     def getDirection(self, angle):
-        if angle < 0:
-            angle += 360
-
         if angle >= 30 and angle <= 120:
             return 'north'
         elif (angle >= 0 and angle <= 30) or (angle >= 330 and angle <= 360):
@@ -121,16 +117,12 @@ class CubeCalculator:
             ],
             [
                 (self._center_x - a, int(self._center_y - a * 1.5)), # left top
-                (self._center_x, self._center_y - a), # mid top (NOT CERTAIN)
+                (), # mid top (NOT CERTAIN) (self._center_x, self._center_y - a)
                 (self._center_x + a, int(self._center_y - a * 1.5)), # right top
                 (self._center_x, self._center_y - a * 2), # top top
         ]]
 
-        # for layer in points:
-        #     for point in layer:
-        #         cv2.circle(image, point, 5, (0, 255, 0), -1)
         return points
-        # cv2.imshow('test', image)
 
     def getArrangement(self, points):
         order = []
@@ -154,11 +146,9 @@ class CubeCalculator:
         config = {}
         for index, point in enumerate(arrangement):
             if point:
-                index += 1 # config starts at 1
+                 # config starts at index 1
+                index += 1
                 config.update({ index : self.mapColor(point) })
-                cv2.circle(image, tuple(point), 5, (0, 255, 0), -1)
-                cv2.putText(image, str(index), tuple(point), cv2.FONT_HERSHEY_SIMPLEX, 1, 2)
-        # cv2.imshow('img', image)
         return config
     
     def mapColor(self, point):
