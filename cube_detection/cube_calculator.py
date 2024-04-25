@@ -2,6 +2,8 @@ from datetime import datetime
 import cv2
 import numpy as np
 import math
+import serial
+from uart.mircocontroller_communicator import send_message_to_micro
 
 color_ranges = {
     "blue": (np.array([90, 100, 100]), np.array([135, 255, 255])),
@@ -10,6 +12,13 @@ color_ranges = {
     "red2": (np.array([150, 100, 100]), np.array([180, 255, 255]))
 }
 
+uart_color_mapping = {
+    "yellow": "Y",
+    "blue": "B",
+    "red": "R",
+    "": "E",
+    "undefined": "U"
+}
 
 class CubeCalculator:
     def __init__(self) -> None:
@@ -17,7 +26,7 @@ class CubeCalculator:
         self._gray = np.array([0, 0, 0])
         self._center_x = 0
         self._center_y = 0
-        self._curr_config = {}
+        self._curr_config = { index + 1 : 'undefined' for index in range(8) }
         self._curr_direction = ""
         self.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
 
@@ -38,21 +47,16 @@ class CubeCalculator:
                 break
             self._img = frame
             angle = self.getMeanAngle()
+            cv2.imshow('frame', frame)
 
             # check if angle is close to 0, 90, etc.
             if (math.isclose(abs(angle) % 90, 0, abs_tol = 1) or math.isclose(angle, 0, abs_tol = 1)):
                 direction = self.getDirection(angle)
                 if direction != self._curr_direction:
-                    cv2.imshow('frame', self._img)
                     self._curr_direction = direction
                     points = self.getCubePoints()
                     arrangement = self.getArrangement(points)
-                    config = self.getConfig(arrangement)
-                    curr_config = self._curr_config
-                    for key in config:
-                        if key not in curr_config:
-                            curr_config[key] = config[key]
-                    self._curr_config = {k: curr_config[k] for k in sorted(curr_config)}
+                    self.setConfig(arrangement)
                     self.sendConfig()
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -70,7 +74,6 @@ class CubeCalculator:
 
         self._center_x = image.shape[1] // 2
         self._center_y = (image.shape[0] // 2) - 80
-        cv2.circle(image, (self._center_x, self._center_y), 5, (0, 255, 0), -1)
 
         for contour in contours:
             area = cv2.contourArea(contour)
@@ -86,7 +89,6 @@ class CubeCalculator:
                     angle_deg = np.degrees(angle_rad)
 
                     angles.append(angle_deg)
-                    cv2.line(image, (centroid_x, centroid_y), (self._center_x, self._center_y), (255, 0, 0), 1)
         mean_angle = np.mean(angles)
         if mean_angle < 0:
             mean_angle += 360
@@ -106,7 +108,6 @@ class CubeCalculator:
             return 'unknown'
 
     def getCubePoints(self):
-        image = self._img
         a = 90
 
         points = [[
@@ -141,15 +142,11 @@ class CubeCalculator:
                 arrangement.append(points[i][j])
         return arrangement
 
-    def getConfig(self, arrangement):
-        image = self._img
-        config = {}
+    def setConfig(self, arrangement):
         for index, point in enumerate(arrangement):
-            if point:
-                 # config starts at index 1
-                index += 1
-                config.update({ index : self.mapColor(point) })
-        return config
+            index += 1
+            if point != ():
+                self._curr_config[index] = self.mapColor(point)
     
     def mapColor(self, point):
         image = self._img
@@ -165,15 +162,36 @@ class CubeCalculator:
                     return 'red'
                 else:
                     return color
-        return ""
+        return ''
 
     def sendConfig(self):
         configuration = {
             "time": str(datetime.now()),
             "config": self._curr_config
         }
-        print(configuration)
+        uart_config = self.convert_config_to_uart_format(configuration)
+        send_message_to_micro(uart_config)
 
+    def convert_config_to_uart_format(self, config):
+        result = ""
+        for key in sorted(config["config"].keys()):
+            color = config["config"][key]
+            if color in uart_color_mapping:
+                result += uart_color_mapping[color]
+            else:
+                result += "E"
+        return result
+
+    def send_message_to_micro(message):
+        if isinstance(message, str):
+            message = message.encode()
+        with serial.Serial() as ser:
+            ser.baudrate = 9600
+            ser.port = '/dev/serial0'
+            ser.open()
+            ser.write(message)
+            ser.close()
+        
 
 if __name__ == '__main__':
     CubeCalculator()
