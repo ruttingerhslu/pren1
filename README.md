@@ -1,5 +1,14 @@
 Run the Program in the root folder.
 
+Local:
 ''' bash
-python3 main.py
+chmod +x run.sh
+./run.sh
+'''
+
+
+Pi:
+''' bash
+chmod +x run.sh
+./run.sh -e pi.env
 '''

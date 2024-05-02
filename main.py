@@ -5,6 +5,7 @@ import sys
 sys.path.append('modules')
 
 from verification.verification import send_end_signal_to_server, send_start_signal_to_server
+from cube_detection import cube_calculator
 
 ser = serial.Serial('/dev/serial0', 9600, timeout=1)
 
@@ -14,6 +15,7 @@ while True:
         print("Empfangene Daten:", data)
         if data == "start":
             send_start_signal_to_server()
+            cube_calculator()
             print("Start Program")
         if data == "ok":
             print("sent config has been built")

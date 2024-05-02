@@ -51,7 +51,7 @@ class CubeCalculator:
                 break
             self._img = frame
             angle = self.getMeanAngle()
-            cv2.imshow('frame', frame)
+            #cv2.imshow('frame', frame)
 
             # check if angle is close to 0, 90, etc.
             if (math.isclose(abs(angle) % 90, 0, abs_tol = 1) or math.isclose(angle, 0, abs_tol = 1)):
@@ -175,6 +175,7 @@ class CubeCalculator:
         }
         uart_config = self.convert_config_to_uart_format(configuration)
         send_message_to_micro(uart_config)
+        print(uart_config)
 
     def convert_config_to_uart_format(self, config):
         result = ""

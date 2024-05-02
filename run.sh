@@ -1,10 +1,22 @@
-
 #!/bin/bash
 
-# Define the path to the virtual environment
-# Define the path to your Python script
-VENV_PATH="../../venvs/pren"
-SCRIPT_PATH="/home/pren/workspace/pren1/cube_detection/cube_calculator.py"
+# Default environment
+environment="local.env"
+
+# Parse command-line options
+while getopts "e:" flag
+do
+    case "${flag}" in
+        e) environment=${OPTARG};;
+    esac
+done
+
+echo "Using environment: $environment"
+
+# Load Environment variables
+set -a
+source "$environment"
+set +a
 
 # Activate the virtual environment
 echo "Activating virtual environment..."
@@ -17,4 +29,3 @@ pip install -r requirements.txt
 # Run the Python script
 echo "Running the script..."
 python3 "$SCRIPT_PATH"
-
