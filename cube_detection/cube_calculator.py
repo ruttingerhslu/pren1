@@ -15,7 +15,8 @@ UPPER_RED_HUE = min(180, int(colorsys.rgb_to_hsv(*RED_RGB)[0] * 180) + 10)
 color_ranges = {
     "blue": ([80, 100, 100], [130, 255, 255]),
     "yellow": ([20, 50, 100], [40, 255, 255]),
-    "red": ([LOWER_RED_HUE, 50, 50], [UPPER_RED_HUE, 255, 255])
+    "red1": (np.array([0, 100, 100]), np.array([50, 255, 255])),
+    "red2": (np.array([150, 100, 100]), np.array([180, 255, 255]))
 }
 
 uart_color_mapping = {
@@ -30,8 +31,8 @@ class CubeCalculator:
     def __init__(self) -> None:
         self._img = None
         self._gray = np.array([0, 0, 0])
-        self._center_x = 0
-        self._center_y = 0
+        self._center_x = None
+        self._center_y = None
         self._curr_config = { index + 1 : 'undefined' for index in range(8) }
         self._curr_direction = ""
         self.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
@@ -52,18 +53,20 @@ class CubeCalculator:
                 print('Warning: unable to read next frame')
                 break
             self._img = frame
-            angle = self.getMeanAngle()
-            # cv2.imshow('frame', frame)
+            self.setCenterPoint()
+            if (self._center_x != None and self._center_y != None):
+                angle = self.getMeanAngle()
 
-            # check if angle is close to 0, 90, etc.
-            if (math.isclose(abs(angle) % 90, 0, abs_tol = 1) or math.isclose(angle, 0, abs_tol = 1)):
-                direction = self.getDirection(angle)
-                if direction != self._curr_direction:
-                    self._curr_direction = direction
-                    points = self.getCubePoints()
-                    arrangement = self.getArrangement(points)
-                    self.setConfig(arrangement)
-                    self.sendConfig()
+                # check if angle is close to 0, 90, etc.
+                if (math.isclose(abs(angle) % 90, 0, abs_tol = 1) or math.isclose(angle, 0, abs_tol = 1)):
+                    # cv2.imshow('frame', self._img)
+                    direction = self.getDirection(angle)
+                    if direction != self._curr_direction:
+                        self._curr_direction = direction
+                        points = self.getCubePoints()
+                        arrangement = self.getArrangement(points)
+                        self.setConfig(arrangement)
+                        self.sendConfig()
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
@@ -78,10 +81,10 @@ class CubeCalculator:
 
         angles = []
 
-        self._center_x = image.shape[1] // 2
-        self._center_y = (image.shape[0] // 2) - 60
+        # self._center_x = image.shape[1] // 2
+        # self._center_y = (image.shape[0] // 2) - 60
 
-        cv2.circle(image, (self._center_x, self._center_y), 5, (0, 255, 255), -1)
+        # cv2.circle(image, (self._center_x, self._center_y), 5, (0, 255, 255), -1)
 
         for contour in contours:
             area = cv2.contourArea(contour)
@@ -131,11 +134,11 @@ class CubeCalculator:
                 (self._center_x, self._center_y - a * 2), # top top
         ]]
 
-        image_dupe = self._img
-        for point in points:
-            for p in point: 
-                if p != ():
-                    cv2.circle(image_dupe, (p), 5, (0, 255, 0), -1)
+        # image_dupe = self._img
+        # for point in points:
+        #     for p in point: 
+        #         if p != ():
+        #             cv2.circle(image_dupe, (p), 5, (0, 255, 0), -1)
 
         # cv2.imshow("frame", image_dupe)
         return points
@@ -157,7 +160,38 @@ class CubeCalculator:
                 arrangement.append(points[i][j])
         return arrangement
 
+    def setCenterPoint(self):
+        image = self._img
+
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        edges = cv2.Canny(gray, 50, 150)
+        lines = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=50, minLineLength=50, maxLineGap=20)
+
+        if lines is not None and len(lines) >= 2:
+            lines = sorted(lines, key=lambda x: ((x[0][0] - x[0][2])**2 + (x[0][1] - x[0][3])**2)**0.5, reverse=True)[:2]
+            for line in lines:
+                x1, y1, x2, y2 = line[0]
+                # cv2.line(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
+            
+            x1, y1, x2, y2 = lines[0][0]
+            x3, y3, x4, y4 = lines[1][0]
+            det = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4)
+            if det != 0:
+                intersection_x = int(((x1*y2-y1*x2)*(x3-x4) - (x1-x2)*(x3*y4-y3*x4)) / det)
+                intersection_y = int(((x1*y2-y1*x2)*(y3-y4) - (y1-y2)*(x3*y4-y3*x4)) / det)
+                intersection_point = (intersection_x, intersection_y)
+
+                center_x, center_y = image.shape[1] // 2, image.shape[0] // 2
+                distance_threshold = 60
+                distance_from_center = np.linalg.norm(np.array(intersection_point) - np.array([center_x, center_y]))
+                if distance_from_center > distance_threshold:
+                    return
+
+                self._center_x = intersection_x
+                self._center_y = intersection_y
+
     def setConfig(self, arrangement):
+        cv2.imshow('frame', self._img)
         for index, point in enumerate(arrangement):
             index += 1
             if point != ():
@@ -168,7 +202,6 @@ class CubeCalculator:
         hsv_img = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
         hsv_point = hsv_img[tuple(reversed(point))]     
-
         for color, (lower, upper) in color_ranges.items():
             lower = np.array(lower)
             upper = np.array(upper)
