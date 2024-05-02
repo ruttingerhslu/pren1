@@ -200,6 +200,7 @@ class CubeCalculator:
 
     def send_message_to_micro(self, message):
         if isinstance(message, str):
+            message += '\n'
             message = message.encode()
         with serial.Serial() as ser:
             ser.baudrate = 9600
