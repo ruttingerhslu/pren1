@@ -3,15 +3,19 @@ import cv2
 import numpy as np
 import math
 import serial
+import colorsys
 
 import sys
 sys.path.append('modules')
+# Constants Cube
+RED_RGB = (138, 4, 11)
+LOWER_RED_HUE = max(0, int(colorsys.rgb_to_hsv(*RED_RGB)[0] * 180) - 10)
+UPPER_RED_HUE = min(180, int(colorsys.rgb_to_hsv(*RED_RGB)[0] * 180) + 10)
 
 color_ranges = {
-    "blue": (np.array([90, 100, 80]), np.array([135, 255, 255])),
-    "yellow": (np.array([25, 100, 100]), np.array([35, 255, 255])),
-    "red1": (np.array([0, 100, 100]), np.array([50, 255, 255])),
-    "red2": (np.array([150, 100, 100]), np.array([180, 255, 255]))
+    "blue": ([80, 100, 100], [130, 255, 255]),
+    "yellow": ([20, 50, 100], [40, 255, 255]),
+    "red": ([LOWER_RED_HUE, 50, 50], [UPPER_RED_HUE, 255, 255])
 }
 
 uart_color_mapping = {
@@ -49,7 +53,7 @@ class CubeCalculator:
                 break
             self._img = frame
             angle = self.getMeanAngle()
-            #cv2.imshow('frame', frame)
+            # cv2.imshow('frame', frame)
 
             # check if angle is close to 0, 90, etc.
             if (math.isclose(abs(angle) % 90, 0, abs_tol = 1) or math.isclose(angle, 0, abs_tol = 1)):
@@ -75,7 +79,9 @@ class CubeCalculator:
         angles = []
 
         self._center_x = image.shape[1] // 2
-        self._center_y = (image.shape[0] // 2) - 80
+        self._center_y = (image.shape[0] // 2) - 60
+
+        cv2.circle(image, (self._center_x, self._center_y), 5, (0, 255, 255), -1)
 
         for contour in contours:
             area = cv2.contourArea(contour)
@@ -115,16 +121,23 @@ class CubeCalculator:
         points = [[
                 (self._center_x - a, self._center_y), # left bottom
                 (self._center_x, int(self._center_y + a / 2)), # mid bottom
-                (self._center_x + a, self._center_y), # right bottom
+                (self._center_x + a + 10, self._center_y), # right bottom
                 (), #UNKONWN (behind bottom)
             ],
             [
                 (self._center_x - a, int(self._center_y - a * 1.5)), # left top
                 (), # mid top (NOT CERTAIN) (self._center_x, self._center_y - a)
-                (self._center_x + a, int(self._center_y - a * 1.5)), # right top
+                (self._center_x + a + 20, int(self._center_y - a * 1.5)), # right top
                 (self._center_x, self._center_y - a * 2), # top top
         ]]
 
+        image_dupe = self._img
+        for point in points:
+            for p in point: 
+                if p != ():
+                    cv2.circle(image_dupe, (p), 5, (0, 255, 0), -1)
+
+        # cv2.imshow("frame", image_dupe)
         return points
 
     def getArrangement(self, points):
