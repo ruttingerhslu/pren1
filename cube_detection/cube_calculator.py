@@ -7,10 +7,8 @@ import serial
 import sys
 sys.path.append('modules')
 
-from uart.mircocontroller_communicator import send_message_to_micro
-
 color_ranges = {
-    "blue": (np.array([90, 100, 100]), np.array([135, 255, 255])),
+    "blue": (np.array([90, 100, 80]), np.array([135, 255, 255])),
     "yellow": (np.array([25, 100, 100]), np.array([35, 255, 255])),
     "red1": (np.array([0, 100, 100]), np.array([50, 255, 255])),
     "red2": (np.array([150, 100, 100]), np.array([180, 255, 255]))
@@ -173,9 +171,9 @@ class CubeCalculator:
             "time": str(datetime.now()),
             "config": self._curr_config
         }
-        uart_config = self.convert_config_to_uart_format(configuration)
-        send_message_to_micro(uart_config)
-        print(uart_config)
+        # uart_config = self.convert_config_to_uart_format(configuration)
+        # self.send_message_to_micro(uart_config)
+        print(configuration)
 
     def convert_config_to_uart_format(self, config):
         result = ""
@@ -187,7 +185,7 @@ class CubeCalculator:
                 result += "E"
         return result
 
-    def send_message_to_micro(message):
+    def send_message_to_micro(self, message):
         if isinstance(message, str):
             message = message.encode()
         with serial.Serial() as ser:
