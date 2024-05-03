@@ -7,10 +7,6 @@ import colorsys
 
 import sys
 sys.path.append('modules')
-# Constants Cube
-RED_RGB = (138, 4, 11)
-LOWER_RED_HUE = max(0, int(colorsys.rgb_to_hsv(*RED_RGB)[0] * 180) - 10)
-UPPER_RED_HUE = min(180, int(colorsys.rgb_to_hsv(*RED_RGB)[0] * 180) + 10)
 
 color_ranges = {
     "blue": ([80, 100, 100], [130, 255, 255]),
@@ -35,6 +31,7 @@ class CubeCalculator:
         self._center_y = None
         self._curr_config = { index + 1 : 'undefined' for index in range(8) }
         self._curr_direction = ""
+        self._list_of_centers = []
         self.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
 
     def open_camera_profile(self, ip_address, username, password, profile):
@@ -53,7 +50,8 @@ class CubeCalculator:
                 print('Warning: unable to read next frame')
                 break
             self._img = frame
-            self.setCenterPoint()
+            if (self._center_x == None and self._center_y == None):
+                self.setCenterPoint()
             if (self._center_x != None and self._center_y != None):
                 angle = self.getMeanAngle()
 
@@ -179,22 +177,19 @@ class CubeCalculator:
             if det != 0:
                 intersection_x = int(((x1*y2-y1*x2)*(x3-x4) - (x1-x2)*(x3*y4-y3*x4)) / det)
                 intersection_y = int(((x1*y2-y1*x2)*(y3-y4) - (y1-y2)*(x3*y4-y3*x4)) / det)
-                intersection_point = (intersection_x, intersection_y)
+                self._list_of_centers.append((intersection_x, intersection_y))
 
-                center_x, center_y = image.shape[1] // 2, image.shape[0] // 2
-                distance_threshold = 60
-                distance_from_center = np.linalg.norm(np.array(intersection_point) - np.array([center_x, center_y]))
-                if distance_from_center > distance_threshold:
-                    return
-
-                self._center_x = intersection_x
-                self._center_y = intersection_y
+                if(len(self._list_of_centers) > 30):
+                    related_points = self.find_related_points(self._list_of_centers)
+                    median_x, median_y = self.get_points_medians(related_points)
+                    self._center_x = median_x
+                    self._center_y = median_y
 
     def setConfig(self, arrangement):
         cv2.imshow('frame', self._img)
         for index, point in enumerate(arrangement):
             index += 1
-            if point != ():
+            if point != (): # and self._curr_config[index] == "undefined":
                 self._curr_config[index] = self.mapColor(point)
     
     def mapColor(self, point):
@@ -241,6 +236,28 @@ class CubeCalculator:
             ser.open()
             ser.write(message)
             ser.close()
+
+    def euclidean_distance(self, point1, point2):
+        return np.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
+
+    def find_related_points(self, points):
+        related_points = []
+        for i in range(len(points)):
+            for j in range(i+1, len(points)):
+                distance = self.euclidean_distance(points[i], points[j])
+                if distance <= 0.1 * min(points[i][0], points[j][0], points[i][1], points[j][1]):
+                    related_points.append((points[i], points[j]))
+        return related_points
+
+    def get_points_medians(self, related_points):
+        x_values = []
+        y_values = []
+        for group in related_points:
+            x_values.extend([point[0] for point in group])
+            y_values.extend([point[1] for point in group])
+        median_x = math.trunc(np.median(x_values))
+        median_y = math.trunc(np.median(y_values))
+        return median_x, median_y
         
 
 if __name__ == '__main__':
