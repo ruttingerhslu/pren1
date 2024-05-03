@@ -1,14 +1,17 @@
+# Guide
+
 Run the Program in the root folder.
 
 Local:
-''' bash
+
+```bash
 chmod +x run.sh
 ./run.sh
-'''
-
+```
 
 Pi:
-''' bash
+
+```bash
 chmod +x run.sh
 ./run.sh -e pi.env
-'''
+```
