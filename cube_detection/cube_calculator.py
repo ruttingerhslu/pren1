@@ -57,14 +57,15 @@ class CubeCalculator:
             #    self.send_config_to_server()
             if (self._center_x != None and self._center_y != None):
                 angle = self.getMeanAngle()
-
                 # check if angle is close to 0, 90, etc.
                 if (math.isclose(abs(angle) % 90, 0, abs_tol = 1) or math.isclose(angle, 0, abs_tol = 1)):
-                    # cv2.imshow('frame', self._img)
+                    cv2.imshow('frame', self._img)
+                    median_length = self.get_median_length()
+
                     direction = self.getDirection(angle)
                     if direction != self._curr_direction:
                         self._curr_direction = direction
-                        points = self.getCubePoints()
+                        points = self.getCubePoints(median_length)
                         arrangement = self.getArrangement(points)
                         self.setConfig(arrangement)
                         self.sendConfig()
@@ -106,6 +107,37 @@ class CubeCalculator:
             mean_angle += 360
         cv2.putText(image, str(mean_angle), (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, 2)
         return mean_angle
+    
+    def get_median_length(self):
+        image = self._img
+
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        # Perform edge detection
+        edges = cv2.Canny(gray, 100, 200)
+
+        mask = np.zeros_like(edges)
+
+        for _, (lower, upper) in color_ranges.items():
+            lower = np.array(lower)
+            upper = np.array(upper)
+            color_mask = cv2.inRange(cv2.cvtColor(image, cv2.COLOR_BGR2HSV), lower, upper)
+            mask = cv2.bitwise_or(mask, color_mask)
+
+        masked_edges = cv2.bitwise_and(edges, mask)
+
+        lines = cv2.HoughLinesP(masked_edges, rho=1, theta=np.pi/180, threshold=50, minLineLength=50, maxLineGap=10)
+
+        edge_lengths = []
+        if lines is not None:
+            for line in lines:
+                x1, y1, x2, y2 = line[0]
+                length = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+                # cv2.line(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                edge_lengths.append(length)
+        median_length = np.median(edge_lengths)
+        median_length = median_length + median_length * 1/4
+        return int(median_length)
 
     def getDirection(self, angle):
         if angle >= 30 and angle <= 120:
@@ -119,9 +151,7 @@ class CubeCalculator:
         else:
             return 'unknown'
 
-    def getCubePoints(self):
-        a = 90
-
+    def getCubePoints(self, a):
         points = [[
                 (self._center_x - a, self._center_y), # left bottom
                 (self._center_x, int(self._center_y + a / 2)), # mid bottom
