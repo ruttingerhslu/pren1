@@ -3,9 +3,10 @@ import cv2
 import numpy as np
 import math
 import serial
-import colorsys
 
 import sys
+
+from modules.verification.verification import send_cube_configuration_to_server
 sys.path.append('modules')
 
 color_ranges = {
@@ -52,6 +53,8 @@ class CubeCalculator:
             self._img = frame
             if (self._center_x == None and self._center_y == None):
                 self.setCenterPoint()
+            #if (self.verify_config()):
+            #    self.send_config_to_server()
             if (self._center_x != None and self._center_y != None):
                 angle = self.getMeanAngle()
 
@@ -258,7 +261,30 @@ class CubeCalculator:
         median_x = math.trunc(np.median(x_values))
         median_y = math.trunc(np.median(y_values))
         return median_x, median_y
+
+
+    def verify_config(self):
+        colors = ["red", "blue", "yellow", ""]
+
+        # Check if all keys are present
+        keys_present = all(str(i) in self._curr_config for i in range(1, 9))
+        if not keys_present:
+            return False
         
+        # Check if all values are either red, blue, yellow, or empty
+        for value in self._curr_config.values():
+            if value not in colors:
+                return False
+        
+        return True
+
+    def send_config_to_server(self):
+        configuration = {
+            "time": str(datetime.now()),
+            "config": self._curr_config
+        }
+        send_cube_configuration_to_server(configuration)
+        return
 
 if __name__ == '__main__':
     CubeCalculator()
