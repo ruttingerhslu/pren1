@@ -58,14 +58,13 @@ class CubeCalculator:
             if (self._center_x != None and self._center_y != None):
                 angle = self.getMeanAngle()
                 # check if angle is close to 0, 90, etc.
-                if (math.isclose(abs(angle) % 90, 0, abs_tol = 1) or math.isclose(angle, 0, abs_tol = 1)):
-                    cv2.imshow('frame', self._img)
-                    median_length = self.get_median_length()
-
+                if (math.isclose(abs(angle) % 90, 0, abs_tol = 0.5) or math.isclose(angle, 0, abs_tol = 0.5)):
                     direction = self.getDirection(angle)
                     if direction != self._curr_direction:
+                        cv2.imshow('img', self._img)
+                        lower_quantile_length = self.get_lower_quantile_length()
                         self._curr_direction = direction
-                        points = self.getCubePoints(median_length)
+                        points = self.getCubePoints(lower_quantile_length)
                         arrangement = self.getArrangement(points)
                         self.setConfig(arrangement)
                         self.sendConfig()
@@ -79,7 +78,12 @@ class CubeCalculator:
         upper_gray = np.array([240, 220, 220], dtype=np.uint8)
 
         mask_gray = cv2.inRange(image, lower_gray, upper_gray)
-        contours, _ = cv2.findContours(mask_gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        kernel = np.ones((9,9),np.uint8)
+        erosion = cv2.erode(mask_gray,kernel,iterations = 1)
+        dilation = cv2.dilate(erosion,kernel,iterations = 1)
+        # cv2.imshow('', dilation)
+
+        contours, _ = cv2.findContours(dilation, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         angles = []
 
@@ -90,6 +94,7 @@ class CubeCalculator:
 
         for contour in contours:
             area = cv2.contourArea(contour)
+            # only get larger gray areas
             if area > 1000:
                 M = cv2.moments(contour)
                 if M["m00"] != 0:
@@ -108,12 +113,11 @@ class CubeCalculator:
         cv2.putText(image, str(mean_angle), (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, 2)
         return mean_angle
     
-    def get_median_length(self):
+    def get_lower_quantile_length(self):
         image = self._img
 
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        # Perform edge detection
         edges = cv2.Canny(gray, 100, 200)
 
         mask = np.zeros_like(edges)
@@ -135,9 +139,11 @@ class CubeCalculator:
                 length = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
                 # cv2.line(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
                 edge_lengths.append(length)
-        median_length = np.median(edge_lengths)
-        median_length = median_length + median_length * 1/4
-        return int(median_length)
+
+        # not median, but lower percentile, as most edges are longer
+        lower_quantile_length = np.percentile(edge_lengths, 25)
+        lower_quantile_length = lower_quantile_length + lower_quantile_length * 1/4
+        return int(lower_quantile_length)
 
     def getDirection(self, angle):
         if angle >= 30 and angle <= 120:
@@ -199,14 +205,17 @@ class CubeCalculator:
         lines = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=50, minLineLength=50, maxLineGap=20)
 
         if lines is not None and len(lines) >= 2:
+            det = 0
+            # sort out longest lines
             lines = sorted(lines, key=lambda x: ((x[0][0] - x[0][2])**2 + (x[0][1] - x[0][3])**2)**0.5, reverse=True)[:2]
             for line in lines:
                 x1, y1, x2, y2 = line[0]
-                # cv2.line(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
-            
-            x1, y1, x2, y2 = lines[0][0]
-            x3, y3, x4, y4 = lines[1][0]
-            det = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4)
+                cv2.line(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
+            if len(lines) == 2:
+                x1, y1, x2, y2 = lines[0][0]
+                x3, y3, x4, y4 = lines[1][0]    
+                det = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+
             if det != 0:
                 intersection_x = int(((x1*y2-y1*x2)*(x3-x4) - (x1-x2)*(x3*y4-y3*x4)) / det)
                 intersection_y = int(((x1*y2-y1*x2)*(y3-y4) - (y1-y2)*(x3*y4-y3*x4)) / det)
@@ -219,7 +228,6 @@ class CubeCalculator:
                     self._center_y = median_y
 
     def setConfig(self, arrangement):
-        cv2.imshow('frame', self._img)
         for index, point in enumerate(arrangement):
             index += 1
             if point != (): # and self._curr_config[index] == "undefined":
