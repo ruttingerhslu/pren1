@@ -61,7 +61,7 @@ class CubeCalculator:
                 if (math.isclose(abs(angle) % 90, 0, abs_tol = 0.5) or math.isclose(angle, 0, abs_tol = 0.5)):
                     direction = self.getDirection(angle)
                     if direction != self._curr_direction:
-                        cv2.imshow('img', self._img)
+                        # cv2.imshow('img', self._img)
                         lower_quantile_length = self.get_lower_quantile_length()
                         self._curr_direction = direction
                         points = self.getCubePoints(lower_quantile_length)
@@ -79,11 +79,9 @@ class CubeCalculator:
 
         mask_gray = cv2.inRange(image, lower_gray, upper_gray)
         kernel = np.ones((9,9),np.uint8)
-        erosion = cv2.erode(mask_gray,kernel,iterations = 1)
-        dilation = cv2.dilate(erosion,kernel,iterations = 1)
-        # cv2.imshow('', dilation)
+        opening = cv2.morphologyEx(mask_gray, cv2.MORPH_OPEN, kernel)
 
-        contours, _ = cv2.findContours(dilation, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(opening, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         angles = []
 
