@@ -3,11 +3,12 @@ import cv2
 import numpy as np
 import math
 import serial
+import time
 
 import sys
 
-from modules.verification.verification import send_cube_configuration_to_server
-sys.path.append('modules')
+# from modules.verification.verification import send_cube_configuration_to_server
+# sys.path.append('modules')
 
 color_ranges = {
     "blue": ([80, 100, 100], [130, 255, 255]),
@@ -37,11 +38,11 @@ class CubeCalculator:
 
     def open_camera_profile(self, ip_address, username, password, profile):
         cap = cv2.VideoCapture('rtsp://' +
-                            username + ':' +
-                            password +
-                            '@' + ip_address +
-                            '/axis-media/media.amp' +
-                            '?streamprofile=' + profile)
+                             username + ':' +
+                             password +
+                             '@' + ip_address +
+                             '/axis-media/media.amp' +
+                             '?streamprofile=' + profile)
         if cap is None or not cap.isOpened():
             print('Warning: unable to open video source: ', ip_address)
             return None
@@ -49,11 +50,14 @@ class CubeCalculator:
             ret, frame = cap.read()
             if not ret:
                 print('Warning: unable to read next frame')
+                #cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                #continue
                 break
             self._img = frame
             if (self._center_x == None and self._center_y == None):
                 self.setCenterPoint()
-            #if (self.verify_config()):
+            if (self.verify_config()):
+                break
             #    self.send_config_to_server()
             if (self._center_x != None and self._center_y != None):
                 angle = self.getMeanAngle()
@@ -228,7 +232,7 @@ class CubeCalculator:
     def setConfig(self, arrangement):
         for index, point in enumerate(arrangement):
             index += 1
-            if point != (): # and self._curr_config[index] == "undefined":
+            if point != () and self._curr_config[index] == "undefined":
                 self._curr_config[index] = self.mapColor(point)
     
     def mapColor(self, point):
@@ -251,8 +255,8 @@ class CubeCalculator:
             "time": str(datetime.now()),
             "config": self._curr_config
         }
-        # uart_config = self.convert_config_to_uart_format(configuration)
-        # self.send_message_to_micro(uart_config)
+        uart_config = self.convert_config_to_uart_format(configuration)
+        self.send_message_to_micro(uart_config)
         print(configuration)
 
     def convert_config_to_uart_format(self, config):
@@ -266,6 +270,7 @@ class CubeCalculator:
         return result
 
     def send_message_to_micro(self, message):
+        print("UART Message: " + message)
         if isinstance(message, str):
             message += '\n'
             message = message.encode()
@@ -323,4 +328,18 @@ class CubeCalculator:
         return
 
 if __name__ == '__main__':
-    CubeCalculator()
+    ser = serial.Serial('/dev/serial0', 9600, timeout=1)
+
+    while True:
+        if ser.in_waiting > 0:
+            data = ser.readline().decode('utf-8').rstrip()
+            print("Empfangene Daten:", data)
+            if data == "start":
+                # send_start_signal_to_server()
+                CubeCalculator()
+                print("Start Program")
+            if data == "done":
+                # send_end_signal_to_server()
+                print("Build is completed")
+                
+        time.sleep(0.1)
