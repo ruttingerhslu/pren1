@@ -177,7 +177,8 @@ class CubeCalculator:
         # for point in points:
         #     for p in point: 
         #         if p != ():
-        #             cv2.circle(image_dupe, (p), 5, (0, 255, 0), -1)
+        #             p_with_offset = (p[0] + 5, p[1] + 5)
+        #             cv2.circle(image_dupe, p_with_offset, 5, (0, 255, 0), -1)
 
         # cv2.imshow("frame", image_dupe)
         return points
@@ -203,8 +204,9 @@ class CubeCalculator:
         image = self._img
 
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        edges = cv2.Canny(gray, 50, 150)
-        lines = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=50, minLineLength=50, maxLineGap=20)
+
+        edges = cv2.Canny(gray, 50, 200)
+        lines = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=20, minLineLength=50, maxLineGap=20)
 
         if lines is not None and len(lines) >= 2:
             det = 0
