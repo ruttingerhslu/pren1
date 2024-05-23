@@ -1,14 +1,12 @@
 from datetime import datetime
+import json
 import cv2
 import numpy as np
 import math
 import serial
 import time
+import requests
 
-import sys
-
-# from modules.verification.verification import send_cube_configuration_to_server
-# sys.path.append('modules')
 
 color_ranges = {
     "blue": ([80, 100, 100], [130, 255, 255]),
@@ -24,6 +22,23 @@ uart_color_mapping = {
     "": "E",
     "undefined": "U"
 }
+
+# Verification Constants #####
+
+token = "92CMFsR7Zsrm"
+base_url_test_server_http = "http://52.58.217.104:5000"
+base_url_test_server_https = "https://18.192.48.168:5000"
+base_url_prod_server = "https://oawz3wjih1.execute-api.eu-central-1.amazonaws.com"
+endpoint = "/cubes/team09"
+# URL for Verification
+url = base_url_prod_server + endpoint
+
+# HTTP Headers
+headers = {
+    "Content-Type": "application/json",
+    "Auth": token
+}
+
 
 class CubeCalculator:
     def __init__(self) -> None:
@@ -326,8 +341,23 @@ class CubeCalculator:
             "time": str(datetime.now()),
             "config": self._curr_config
         }
-        send_cube_configuration_to_server(configuration)
+
+        data = json.dumps(configuration)
+        print(f"Requestbody sent to Server: {data}")
+        response = requests.post(url + "/config", headers=headers, data=data)
+        print(response)
+        print(f"Response Content: {response.content}")
         return
+
+    def send_end_signal_to_server(self):
+        response = requests.post(url + "/end", headers=headers)
+        print(f"Response Content: {response.content}")
+        return response
+
+    def send_start_signal_to_server(self):
+        response = requests.post(url + "/start", headers=headers)
+        print(f"Response Content: {response.content}")
+        return response
 
 if __name__ == '__main__':
     ser = serial.Serial('/dev/serial0', 9600, timeout=1)
