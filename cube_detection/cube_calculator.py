@@ -176,15 +176,15 @@ class CubeCalculator:
 
     def getCubePoints(self, a):
         points = [[
-                (self._center_x - a, self._center_y), # left bottom
+                (int(self._center_x - a * 1.1), self._center_y), # left bottom
                 (self._center_x, int(self._center_y + a / 2)), # mid bottom
-                (self._center_x + a + 10, self._center_y), # right bottom
+                (int(self._center_x + a * 1.1), self._center_y), # right bottom
                 (), #UNKONWN (behind bottom)
             ],
             [
-                (self._center_x - a, int(self._center_y - a * 1.5)), # left top
+                (int(self._center_x - a * 1.1), int(self._center_y - a * 1.5)), # left top
                 (), # mid top (NOT CERTAIN) (self._center_x, self._center_y - a)
-                (self._center_x + a + 20, int(self._center_y - a * 1.5)), # right top
+                (int(self._center_x + a * 1.1), int(self._center_y - a * 1.5)), # right top
                 (self._center_x, self._center_y - a * 2), # top top
         ]]
 
@@ -202,14 +202,14 @@ class CubeCalculator:
         order = []
         arrangement = []
         match (self._curr_direction):
-            case 'west':
-                order = [0, 1, 2, 3]
-            case 'south':
-                order = [1, 2, 3, 0]
-            case 'east':
-                order = [2, 3, 0, 1]
             case 'north':
                 order = [3, 0, 1, 2]
+            case 'east':
+                order = [2, 3, 0, 1]
+            case 'south':
+                order = [1, 2, 3, 0]
+            case 'west':
+                order = [0, 1, 2, 3]
         for i in range(0, 2):
             for j in order:
                 arrangement.append(points[i][j])
