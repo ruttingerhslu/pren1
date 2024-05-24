@@ -67,21 +67,19 @@ class CubeCalculator:
                 print(f"Received message from UART: {message}")
                 if message == "done":
                     print("Build is completed")
-                    # send_end_signal_to_server()
+                    self.send_end_signal_to_server()
                     break
 
             ret, frame = cap.read()
             if not ret:
                 print('Warning: unable to read next frame')
-                #cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                #continue
                 break
             self._img = frame
             if (self._center_x == None and self._center_y == None):
                 self.setCenterPoint()
             if (self.verify_config()):
+                self.send_config_to_server()
                 break
-            #    self.send_config_to_server()
             if (self._center_x != None and self._center_y != None):
                 angle = self.getMeanAngle()
                 # check if angle is close to 0, 90, etc.
@@ -111,11 +109,6 @@ class CubeCalculator:
         contours, _ = cv2.findContours(opening, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         angles = []
-
-        # self._center_x = image.shape[1] // 2
-        # self._center_y = (image.shape[0] // 2) - 60
-
-        # cv2.circle(image, (self._center_x, self._center_y), 5, (0, 255, 255), -1)
 
         for contour in contours:
             area = cv2.contourArea(contour)
@@ -368,26 +361,24 @@ class CubeCalculator:
         print(f"Response Content: {response.content}")
         return response
 
-    def send_start_signal_to_server(self):
-        response = requests.post(url + "/start", headers=headers)
-        print(f"Response Content: {response.content}")
-        return response
+
+def send_start_signal_to_server(self):
+    response = requests.post(url + "/start", headers=headers)
+    print(f"Response Content: {response.content}")
+    return response
+
 
 if __name__ == '__main__':
     ser = serial.Serial('/dev/serial0', 9600, timeout=1)
     cube_calculator = CubeCalculator()
 
     while True:
-        print("checking serial")
         if ser.in_waiting > 0:
             data = ser.readline().decode('utf-8').rstrip()
-            print("Empfangene Daten:", data)
+            print("Received message from UART:", data)
             if data == "start":
-                # send_start_signal_to_server()
+                send_start_signal_to_server()
                 cube_calculator.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
-                print("Start Program")
-            if data == "done":
-                # send_end_signal_to_server()
-                print("Build is completed")
+                print("Start Algorithm")
                 
         time.sleep(0.1)
