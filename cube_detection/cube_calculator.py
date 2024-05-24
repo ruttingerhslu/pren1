@@ -5,7 +5,7 @@ import numpy as np
 import math
 import serial
 import time
-import requests
+# import requests
 
 
 color_ranges = {
@@ -82,11 +82,11 @@ class CubeCalculator:
                         arrangement = self.getArrangement(points)
                         self.setConfig(arrangement)
                         self.sendConfig()
-                        self.verify_config()
+                        # self.verify_config()
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         
-        self.send_config_to_server()
+        # self.send_config_to_server()
 
     def getMeanAngle(self):
         image = self._img
@@ -94,8 +94,19 @@ class CubeCalculator:
         lower_gray = np.array([180, 175, 170], dtype=np.uint8)
         upper_gray = np.array([240, 220, 220], dtype=np.uint8)
 
-        mask_gray = cv2.inRange(image, lower_gray, upper_gray)
-        kernel = np.ones((9,9),np.uint8)
+        # ellipse window
+        height, width = image.shape[:2]
+        center = (self._center_x, self._center_y + 50)
+        axes = (330, 230)
+        angle = 0
+        ellipse_mask = np.zeros((height, width), dtype=np.uint8)
+        cv2.ellipse(ellipse_mask, center, axes, angle, 0, 360, 255, -1)
+        black_background = np.zeros_like(image)
+        ellipse_window = cv2.bitwise_and(image, image, mask=ellipse_mask)
+        cv2.imshow('ellipse window: ', ellipse_window)
+
+        mask_gray = cv2.inRange(ellipse_window, lower_gray, upper_gray)
+        kernel = np.ones((9, 9), np.uint8)
         opening = cv2.morphologyEx(mask_gray, cv2.MORPH_OPEN, kernel)
 
         contours, _ = cv2.findContours(opening, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -156,13 +167,13 @@ class CubeCalculator:
         return int(lower_quantile_length)
 
     def getDirection(self, angle):
-        if angle >= 30 and angle <= 120:
+        if angle >= 45 and angle <= 135:
             return 'north'
-        elif (angle >= 0 and angle <= 30) or (angle >= 330 and angle <= 360):
+        elif (angle >= 0 and angle <= 45) or (angle >= 315 and angle <= 360):
             return 'east'
-        elif angle >= 210 and angle <= 300:
+        elif angle >= 225 and angle <= 315:
             return 'south'
-        elif angle >= 150 and angle <= 240:
+        elif angle >= 135 and angle <= 225:
             return 'west'
         else:
             return 'unknown'
@@ -266,7 +277,7 @@ class CubeCalculator:
             "config": self._curr_config
         }
         uart_config = self.convert_config_to_uart_format(configuration)
-        self.send_message_to_micro(uart_config)
+        # self.send_message_to_micro(uart_config)
         print(configuration)
 
     def convert_config_to_uart_format(self, config):
@@ -323,43 +334,45 @@ class CubeCalculator:
     def verify_config(self):
         self._config_completed =  not( "undefined" in self._curr_config.values())
 
-    def send_config_to_server(self):
-        configuration = {
-            "time": str(datetime.now()),
-            "config": self._curr_config
-        }
-        print(configuration)
+#     def send_config_to_server(self):
+#         configuration = {
+#             "time": str(datetime.now()),
+#             "config": self._curr_config
+#         }
+#         print(configuration)
 
-        data = json.dumps(configuration)
-        print(f"Requestbody sent to Server: {data}")
-        response = requests.post(url + "/config", headers=headers, data=data)
-        print(response)
-        print(f"Response Content: {response.content}")
+#         data = json.dumps(configuration)
+#         print(f"Requestbody sent to Server: {data}")
+#         response = requests.post(url + "/config", headers=headers, data=data)
+#         print(response)
+#         print(f"Response Content: {response.content}")
 
 
-def send_end_signal_to_server():
-    print("Send end signal to Server")
-    response = requests.post(url + "/end", headers=headers)
-    print(f"Response Content: {response.content}")
+# def send_end_signal_to_server():
+#     print("Send end signal to Server")
+#     response = requests.post(url + "/end", headers=headers)
+#     print(f"Response Content: {response.content}")
 
-def send_start_signal_to_server():
-    print("Send start signal to Server")
-    response = requests.post(url + "/start", headers=headers)
-    print(f"Response Content: {response.content}")
+# def send_start_signal_to_server():
+#     print("Send start signal to Server")
+#     response = requests.post(url + "/start", headers=headers)
+#     print(f"Response Content: {response.content}")
 
 if __name__ == '__main__':
-    ser = serial.Serial('/dev/serial0', 9600, timeout=1)
+    cube_calculator = CubeCalculator()
+    cube_calculator.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
+    # ser = serial.Serial('/dev/serial0', 9600, timeout=1)
 
-    while True:
-        if ser.in_waiting > 0:
-            data = ser.readline().decode('utf-8').rstrip()
-            print("Received message from UART:", data)
-            if data == "start":
-                print("Start Algorithm")
-                send_start_signal_to_server()
-                cube_calculator = CubeCalculator()
-                cube_calculator.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
-            if data == "done":
-                print("Build is completed")
-                send_end_signal_to_server()
+    # while True:
+    #     if ser.in_waiting > 0:
+    #         data = ser.readline().decode('utf-8').rstrip()
+    #         print("Received message from UART:", data)
+    #         if data == "start":
+    #             print("Start Algorithm")
+    #             send_start_signal_to_server()
+    #             cube_calculator = CubeCalculator()
+    #             cube_calculator.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
+    #         if data == "done":
+    #             print("Build is completed")
+    #             send_end_signal_to_server()
 
