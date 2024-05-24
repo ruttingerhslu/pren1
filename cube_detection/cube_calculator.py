@@ -79,7 +79,6 @@ class CubeCalculator:
                 self.setCenterPoint()
             if (self.verify_config()):
                 self.send_config_to_server()
-                break
             if (self._center_x != None and self._center_y != None):
                 angle = self.getMeanAngle()
                 # check if angle is close to 0, 90, etc.
@@ -348,24 +347,24 @@ class CubeCalculator:
             "time": str(datetime.now()),
             "config": self._curr_config
         }
+        print(configuration)
 
         data = json.dumps(configuration)
         print(f"Requestbody sent to Server: {data}")
         response = requests.post(url + "/config", headers=headers, data=data)
         print(response)
         print(f"Response Content: {response.content}")
-        return
 
     def send_end_signal_to_server(self):
+        print("Send end signal to Server")
         response = requests.post(url + "/end", headers=headers)
         print(f"Response Content: {response.content}")
-        return response
 
 
 def send_start_signal_to_server(self):
+    print("Send start signal to Server")
     response = requests.post(url + "/start", headers=headers)
     print(f"Response Content: {response.content}")
-    return response
 
 
 if __name__ == '__main__':
