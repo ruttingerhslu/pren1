@@ -49,7 +49,6 @@ class CubeCalculator:
         self._curr_config = { index + 1 : 'undefined' for index in range(8) }
         self._curr_direction = ""
         self._list_of_centers = []
-        self.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
 
     def open_camera_profile(self, ip_address, username, password, profile):
         cap = cv2.VideoCapture('rtsp://' +
@@ -62,6 +61,15 @@ class CubeCalculator:
             print('Warning: unable to open video source: ', ip_address)
             return None
         while True:
+            # Check for UART messages
+            message = self.read_uart()
+            if message:
+                print(f"Received message from UART: {message}")
+                if message == "done":
+                    print("Build is completed")
+                    # send_end_signal_to_server()
+                    break
+
             ret, frame = cap.read()
             if not ret:
                 print('Warning: unable to read next frame')
@@ -320,6 +328,12 @@ class CubeCalculator:
         median_y = math.trunc(np.median(y_values))
         return median_x, median_y
 
+    
+    def read_uart(self):
+        if ser.in_waiting > 0:
+            message = ser.readline().decode('utf-8').strip()
+            return message
+        return None
 
     def verify_config(self):
         colors = ["red", "blue", "yellow", ""]
@@ -361,14 +375,16 @@ class CubeCalculator:
 
 if __name__ == '__main__':
     ser = serial.Serial('/dev/serial0', 9600, timeout=1)
+    cube_calculator = CubeCalculator()
 
     while True:
+        print("checking serial")
         if ser.in_waiting > 0:
             data = ser.readline().decode('utf-8').rstrip()
             print("Empfangene Daten:", data)
             if data == "start":
                 # send_start_signal_to_server()
-                CubeCalculator()
+                cube_calculator.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
                 print("Start Program")
             if data == "done":
                 # send_end_signal_to_server()
