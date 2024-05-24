@@ -361,7 +361,7 @@ class CubeCalculator:
         print(f"Response Content: {response.content}")
 
 
-def send_start_signal_to_server(self):
+def send_start_signal_to_server():
     print("Send start signal to Server")
     response = requests.post(url + "/start", headers=headers)
     print(f"Response Content: {response.content}")
