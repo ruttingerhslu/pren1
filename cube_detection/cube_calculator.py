@@ -5,7 +5,7 @@ import numpy as np
 import math
 import serial
 import time
-# import requests
+import requests
 
 
 color_ranges = {
@@ -82,11 +82,11 @@ class CubeCalculator:
                         arrangement = self.getArrangement(points)
                         self.setConfig(arrangement)
                         self.sendConfig()
-                        # self.verify_config()
+                        self.verify_config()
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         
-        # self.send_config_to_server()
+        self.send_config_to_server()
 
     def getMeanAngle(self):
         image = self._img
@@ -103,7 +103,6 @@ class CubeCalculator:
         cv2.ellipse(ellipse_mask, center, axes, angle, 0, 360, 255, -1)
         black_background = np.zeros_like(image)
         ellipse_window = cv2.bitwise_and(image, image, mask=ellipse_mask)
-        cv2.imshow('ellipse window: ', ellipse_window)
 
         mask_gray = cv2.inRange(ellipse_window, lower_gray, upper_gray)
         kernel = np.ones((9, 9), np.uint8)
@@ -277,7 +276,7 @@ class CubeCalculator:
             "config": self._curr_config
         }
         uart_config = self.convert_config_to_uart_format(configuration)
-        # self.send_message_to_micro(uart_config)
+        self.send_message_to_micro(uart_config)
         print(configuration)
 
     def convert_config_to_uart_format(self, config):
@@ -334,45 +333,43 @@ class CubeCalculator:
     def verify_config(self):
         self._config_completed =  not( "undefined" in self._curr_config.values())
 
-#     def send_config_to_server(self):
-#         configuration = {
-#             "time": str(datetime.now()),
-#             "config": self._curr_config
-#         }
-#         print(configuration)
+    def send_config_to_server(self):
+        configuration = {
+            "time": str(datetime.now()),
+            "config": self._curr_config
+        }
+        print(configuration)
 
-#         data = json.dumps(configuration)
-#         print(f"Requestbody sent to Server: {data}")
-#         response = requests.post(url + "/config", headers=headers, data=data)
-#         print(response)
-#         print(f"Response Content: {response.content}")
+        data = json.dumps(configuration)
+        print(f"Requestbody sent to Server: {data}")
+        response = requests.post(url + "/config", headers=headers, data=data)
+        print(response)
+        print(f"Response Content: {response.content}")
 
 
-# def send_end_signal_to_server():
-#     print("Send end signal to Server")
-#     response = requests.post(url + "/end", headers=headers)
-#     print(f"Response Content: {response.content}")
+def send_end_signal_to_server():
+    print("Send end signal to Server")
+    response = requests.post(url + "/end", headers=headers)
+    print(f"Response Content: {response.content}")
 
-# def send_start_signal_to_server():
-#     print("Send start signal to Server")
-#     response = requests.post(url + "/start", headers=headers)
-#     print(f"Response Content: {response.content}")
+def send_start_signal_to_server():
+    print("Send start signal to Server")
+    response = requests.post(url + "/start", headers=headers)
+    print(f"Response Content: {response.content}")
 
 if __name__ == '__main__':
-    cube_calculator = CubeCalculator()
-    cube_calculator.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
-    # ser = serial.Serial('/dev/serial0', 9600, timeout=1)
+    ser = serial.Serial('/dev/serial0', 9600, timeout=1)
 
-    # while True:
-    #     if ser.in_waiting > 0:
-    #         data = ser.readline().decode('utf-8').rstrip()
-    #         print("Received message from UART:", data)
-    #         if data == "start":
-    #             print("Start Algorithm")
-    #             send_start_signal_to_server()
-    #             cube_calculator = CubeCalculator()
-    #             cube_calculator.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
-    #         if data == "done":
-    #             print("Build is completed")
-    #             send_end_signal_to_server()
+    while True:
+        if ser.in_waiting > 0:
+            data = ser.readline().decode('utf-8').rstrip()
+            print("Received message from UART:", data)
+            if data == "start":
+                print("Start Algorithm")
+                send_start_signal_to_server()
+                cube_calculator = CubeCalculator()
+                cube_calculator.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
+            if data == "done":
+                print("Build is completed")
+                send_end_signal_to_server()
 
