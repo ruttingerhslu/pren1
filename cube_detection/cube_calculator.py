@@ -49,6 +49,7 @@ class CubeCalculator:
         self._curr_config = { index + 1 : 'undefined' for index in range(8) }
         self._curr_direction = ""
         self._list_of_centers = []
+        self._config_completed = False
 
     def open_camera_profile(self, ip_address, username, password, profile):
         cap = cv2.VideoCapture('rtsp://' +
@@ -60,16 +61,7 @@ class CubeCalculator:
         if cap is None or not cap.isOpened():
             print('Warning: unable to open video source: ', ip_address)
             return None
-        while True:
-            # Check for UART messages
-            message = self.read_uart()
-            if message:
-                print(f"Received message from UART: {message}")
-                if message == "done":
-                    print("Build is completed")
-                    self.send_end_signal_to_server()
-                    break
-
+        while not(self._config_completed):
             ret, frame = cap.read()
             if not ret:
                 print('Warning: unable to read next frame')
@@ -77,8 +69,6 @@ class CubeCalculator:
             self._img = frame
             if (self._center_x == None and self._center_y == None):
                 self.setCenterPoint()
-            if (self.verify_config()):
-                self.send_config_to_server()
             if (self._center_x != None and self._center_y != None):
                 angle = self.getMeanAngle()
                 # check if angle is close to 0, 90, etc.
@@ -92,8 +82,11 @@ class CubeCalculator:
                         arrangement = self.getArrangement(points)
                         self.setConfig(arrangement)
                         self.sendConfig()
+                        self.verify_config()
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
+        
+        self.send_config_to_server()
 
     def getMeanAngle(self):
         image = self._img
@@ -287,7 +280,7 @@ class CubeCalculator:
         return result
 
     def send_message_to_micro(self, message):
-        print("UART Message: " + message)
+        print("UART Message to Micro: " + message)
         if isinstance(message, str):
             message += '\n'
             message = message.encode()
@@ -328,19 +321,7 @@ class CubeCalculator:
         return None
 
     def verify_config(self):
-        colors = ["red", "blue", "yellow", ""]
-
-        # Check if all keys are present
-        keys_present = all(str(i) in self._curr_config for i in range(1, 9))
-        if not keys_present:
-            return False
-        
-        # Check if all values are either red, blue, yellow, or empty
-        for value in self._curr_config.values():
-            if value not in colors:
-                return False
-        
-        return True
+        self._config_completed =  not( "undefined" in self._curr_config.values())
 
     def send_config_to_server(self):
         configuration = {
@@ -355,29 +336,30 @@ class CubeCalculator:
         print(response)
         print(f"Response Content: {response.content}")
 
-    def send_end_signal_to_server(self):
-        print("Send end signal to Server")
-        response = requests.post(url + "/end", headers=headers)
-        print(f"Response Content: {response.content}")
 
+def send_end_signal_to_server():
+    print("Send end signal to Server")
+    response = requests.post(url + "/end", headers=headers)
+    print(f"Response Content: {response.content}")
 
 def send_start_signal_to_server():
     print("Send start signal to Server")
     response = requests.post(url + "/start", headers=headers)
     print(f"Response Content: {response.content}")
 
-
 if __name__ == '__main__':
     ser = serial.Serial('/dev/serial0', 9600, timeout=1)
-    cube_calculator = CubeCalculator()
 
     while True:
         if ser.in_waiting > 0:
             data = ser.readline().decode('utf-8').rstrip()
             print("Received message from UART:", data)
             if data == "start":
-                send_start_signal_to_server()
-                cube_calculator.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
                 print("Start Algorithm")
-                
-        time.sleep(0.1)
+                send_start_signal_to_server()
+                cube_calculator = CubeCalculator()
+                cube_calculator.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
+            if data == "done":
+                print("Build is completed")
+                send_end_signal_to_server()
+
