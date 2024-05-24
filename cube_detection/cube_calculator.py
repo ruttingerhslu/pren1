@@ -64,18 +64,27 @@ class CubeCalculator:
         while not(self._config_completed):
             ret, frame = cap.read()
             if not ret:
-                print('Warning: unable to read next frame')
+                print('Warning: unable to read first frame')
                 break
-            self._img = frame
-            if (self._center_x == None and self._center_y == None):
-                self.setCenterPoint()
+            
+            self._img = frame  # Use the first frame for processing
+
+            if self._center_x is None and self._center_y is None:
+                time.sleep(0.1)  # Wait for 0.1 seconds
+                ret, frame2 = cap.read()
+                if not ret:
+                    print('Warning: unable to read second frame')
+                    break
+                self.set_center_point(frame, frame2)
+
             if (self._center_x != None and self._center_y != None):
                 angle = self.getMeanAngle()
                 # check if angle is close to 0, 90, etc.
                 if (math.isclose(abs(angle) % 90, 0, abs_tol = 0.5) or math.isclose(angle, 0, abs_tol = 0.5)):
                     direction = self.getDirection(angle)
                     if direction != self._curr_direction:
-                        # cv2.imshow('img', self._img)
+                        cv2.imshow('img', frame)
+                        cv2.imwrite(f'../resources/frame_{direction}.png', frame)
                         lower_quantile_length = self.get_lower_quantile_length()
                         self._curr_direction = direction
                         points = self.getCubePoints(lower_quantile_length)
@@ -208,36 +217,66 @@ class CubeCalculator:
                 arrangement.append(points[i][j])
         return arrangement
 
-    def setCenterPoint(self):
-        image = self._img
+    def set_center_point(self, frame1, frame2):
+        gray1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
+        gray2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
 
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        edges1 = cv2.Canny(gray1, 50, 200)
+        edges2 = cv2.Canny(gray2, 50, 200)
 
-        edges = cv2.Canny(gray, 50, 200)
-        lines = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=20, minLineLength=50, maxLineGap=20)
+        lines1 = cv2.HoughLinesP(edges1, 1, np.pi / 180, threshold=20, minLineLength=50, maxLineGap=20)
+        lines2 = cv2.HoughLinesP(edges2, 1, np.pi / 180, threshold=20, minLineLength=50, maxLineGap=20)
 
-        if lines is not None and len(lines) >= 2:
-            det = 0
-            # sort out longest lines
-            lines = sorted(lines, key=lambda x: ((x[0][0] - x[0][2])**2 + (x[0][1] - x[0][3])**2)**0.5, reverse=True)[:2]
-            for line in lines:
-                x1, y1, x2, y2 = line[0]
-                cv2.line(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
-            if len(lines) == 2:
-                x1, y1, x2, y2 = lines[0][0]
-                x3, y3, x4, y4 = lines[1][0]    
-                det = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+        if lines1 is not None and lines2 is not None:
+            lines1 = sorted(lines1, key=lambda x: ((x[0][0] - x[0][2])**2 + (x[0][1] - x[0][3])**2)**0.5, reverse=True)[:2]
+            lines2 = sorted(lines2, key=lambda x: ((x[0][0] - x[0][2])**2 + (x[0][1] - x[0][3])**2)**0.5, reverse=True)[:2]
 
-            if det != 0:
-                intersection_x = int(((x1*y2-y1*x2)*(x3-x4) - (x1-x2)*(x3*y4-y3*x4)) / det)
-                intersection_y = int(((x1*y2-y1*x2)*(y3-y4) - (y1-y2)*(x3*y4-y3*x4)) / det)
-                self._list_of_centers.append((intersection_x, intersection_y))
+            intersection1 = self.find_intersection(lines1)
+            intersection2 = self.find_intersection(lines2)
 
-                if(len(self._list_of_centers) > 30):
+            if intersection1 is not None and intersection2 is not None:
+                self._list_of_centers.append(intersection1)
+                self._list_of_centers.append(intersection2)
+
+                if len(self._list_of_centers) > 4:  # Adjust the number of frames to average as needed
                     related_points = self.find_related_points(self._list_of_centers)
                     median_x, median_y = self.get_points_medians(related_points)
                     self._center_x = median_x
                     self._center_y = median_y
+
+    def find_intersection(self, lines):
+        if len(lines) < 2:
+            return None
+        x1, y1, x2, y2 = lines[0][0]
+        x3, y3, x4, y4 = lines[1][0]
+        det = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+        if det == 0:
+            return None
+        intersection_x = int(((x1*y2 - y1*x2) * (x3 - x4) - (x1 - x2) * (x3*y4 - y3*x4)) / det)
+        intersection_y = int(((x1*y2 - y1*x2) * (y3 - y4) - (y1 - y2) * (x3*y4 - y3*x4)) / det)
+        return (intersection_x, intersection_y)
+
+    def find_related_points(self, points):
+        related_points = []
+        for i in range(len(points)):
+            for j in range(i+1, len(points)):
+                distance = self.euclidean_distance(points[i], points[j])
+                if distance <= 0.1 * min(points[i][0], points[j][0], points[i][1], points[j][1]):
+                    related_points.append((points[i], points[j]))
+        return related_points
+
+    def get_points_medians(self, related_points):
+        x_values = []
+        y_values = []
+        for group in related_points:
+            x_values.extend([point[0] for point in group])
+            y_values.extend([point[1] for point in group])
+        median_x = math.trunc(np.median(x_values))
+        median_y = math.trunc(np.median(y_values))
+        return median_x, median_y
+
+    def euclidean_distance(self, point1, point2):
+        return np.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
 
     def setConfig(self, arrangement):
         for index, point in enumerate(arrangement):
@@ -266,7 +305,7 @@ class CubeCalculator:
             "config": self._curr_config
         }
         uart_config = self.convert_config_to_uart_format(configuration)
-        self.send_message_to_micro(uart_config)
+        #self.send_message_to_micro(uart_config)
         print(configuration)
 
     def convert_config_to_uart_format(self, config):
@@ -348,18 +387,22 @@ def send_start_signal_to_server():
     print(f"Response Content: {response.content}")
 
 if __name__ == '__main__':
-    ser = serial.Serial('/dev/serial0', 9600, timeout=1)
-
-    while True:
-        if ser.in_waiting > 0:
-            data = ser.readline().decode('utf-8').rstrip()
-            print("Received message from UART:", data)
-            if data == "start":
-                print("Start Algorithm")
-                send_start_signal_to_server()
-                cube_calculator = CubeCalculator()
-                cube_calculator.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
-            if data == "done":
-                print("Build is completed")
-                send_end_signal_to_server()
+    print("Start Algorithm")
+    send_start_signal_to_server()
+    cube_calculator = CubeCalculator()
+    cube_calculator.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
+    #ser = serial.Serial('/dev/serial0', 9600, timeout=1)
+#
+    #while True:
+    #    if ser.in_waiting > 0:
+    #        data = ser.readline().decode('utf-8').rstrip()
+    #        print("Received message from UART:", data)
+    #        if data == "start":
+    #            print("Start Algorithm")
+    #            send_start_signal_to_server()
+    #            cube_calculator = CubeCalculator()
+    #            cube_calculator.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
+    #        if data == "done":
+    #            print("Build is completed")
+    #            send_end_signal_to_server()
 
