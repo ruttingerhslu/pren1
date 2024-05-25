@@ -51,6 +51,9 @@ class CubeCalculator:
         self._list_of_centers = []
         self._config_completed = False
 
+        self.angle = 0
+        self.a = 0
+
     def open_camera_profile(self, ip_address, username, password, profile):
         cap = cv2.VideoCapture('rtsp://' +
                              username + ':' +
@@ -71,6 +74,11 @@ class CubeCalculator:
                 self.setCenterPoint()
             if (self._center_x != None and self._center_y != None):
                 angle = self.getMeanAngle()
+
+                self._curr_direction = self.getDirection(angle)
+                self.angle = math.radians(-angle + 45)
+                self.a = self.get_lower_quantile_length()
+                self.get_screen_points()
                 # check if angle is close to 0, 90, etc.
                 if (math.isclose(abs(angle) % 90, 0, abs_tol = 0.5) or math.isclose(angle, 0, abs_tol = 0.5)):
                     direction = self.getDirection(angle)
@@ -82,7 +90,7 @@ class CubeCalculator:
                         arrangement = self.getArrangement(points)
                         self.setConfig(arrangement)
                         self.sendConfig()
-                        self.verify_config()
+                        # self.verify_config()
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         
@@ -176,6 +184,85 @@ class CubeCalculator:
             return 'west'
         else:
             return 'unknown'
+    
+    def rotate_point(self, x, y, z):
+        # Rotation matrix around the Y-axis
+        cos_theta = math.cos(self.angle)
+        sin_theta = math.sin(self.angle)
+        x_new = x * cos_theta + z * sin_theta
+        z_new = -x * sin_theta + z * cos_theta
+
+        cos_theta_x = math.cos(math.radians(45))
+        sin_theta_x = math.sin(math.radians(45))
+        y_final = y * cos_theta_x - z_new * sin_theta_x
+        z_final = y * sin_theta_x + z_new * cos_theta_x
+
+        return x_new, y_final, z_final
+
+    def project_point(self, x, y, z):
+        # Simple perspective projection
+        d = 500  # Distance from the camera
+        if z + d == 0:
+            z += 0.1  # Avoid division by zero
+        x_proj = x * d / (d + z)
+        y_proj = y * d / (d + z)
+        return int(x_proj + self._center_x), int(y_proj + self._center_y)
+
+    def get_cube_points(self):
+        a = self.a / 2 # Half the size to match a 2x2x2 cube
+        # Define 8 vertices of a 2x2x2 cube centered at the origin
+        vertices = np.array([
+            [a, 0, a],
+            [-a, 0, a],
+            [-a, 0, -a],
+            [a, 0, -a],
+            [a, -2*a, a],
+            [-a, -2*a, a],
+            [-a, -2*a, -a],
+            [a, -2*a, -a],
+        ])
+
+        # Rotate vertices around the Y-axis
+        rotated_vertices = [self.rotate_point(x, y, z) for x, y, z in vertices]
+
+        # Project 3D points to 2D
+        projected_points = [self.project_point(x, y, z) for x, y, z in rotated_vertices]
+
+        return projected_points
+
+    def get_screen_points(self):
+        points = self.get_cube_points()
+
+        # Manually determine which points are visible based on the cube's orientation and perspective
+        # For a 45 degree angle, some points might be hidden
+        screen_points = [
+            points[0],
+            points[1],
+            points[2],
+            points[3],
+            points[4],
+            points[5],
+            points[6],
+            points[7],
+        ]
+        obstructed = []
+        match self._curr_direction:
+            case 'north':
+                obstructed = [0, 6]
+            case 'east':
+                obstructed = [1, 7]
+            case 'south':
+                obstructed = [2, 4]
+            case 'west':
+                obstructed = [3, 5]
+
+        image_dupe = self._img
+        for i, p in enumerate(screen_points):
+            if i not in obstructed:
+                cv2.putText(image_dupe, str(i), p, cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+        cv2.circle(image_dupe, (self._center_x, self._center_y), 5, (0, 255, 255), -1)
+
+        cv2.imshow("frame", image_dupe)
 
     def getCubePoints(self, a):
         points = [[
@@ -275,8 +362,8 @@ class CubeCalculator:
             "time": str(datetime.now()),
             "config": self._curr_config
         }
-        uart_config = self.convert_config_to_uart_format(configuration)
-        self.send_message_to_micro(uart_config)
+        # uart_config = self.convert_config_to_uart_format(configuration)
+        # self.send_message_to_micro(uart_config)
         print(configuration)
 
     def convert_config_to_uart_format(self, config):
@@ -358,18 +445,20 @@ def send_start_signal_to_server():
     print(f"Response Content: {response.content}")
 
 if __name__ == '__main__':
-    ser = serial.Serial('/dev/serial0', 9600, timeout=1)
+    cube_calculator = CubeCalculator()
+    cube_calculator.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
+    # ser = serial.Serial('/dev/serial0', 9600, timeout=1)
 
-    while True:
-        if ser.in_waiting > 0:
-            data = ser.readline().decode('utf-8').rstrip()
-            print("Received message from UART:", data)
-            if data == "start":
-                print("Start Algorithm")
-                send_start_signal_to_server()
-                cube_calculator = CubeCalculator()
-                cube_calculator.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
-            if data == "done":
-                print("Build is completed")
-                send_end_signal_to_server()
+    # while True:
+    #     if ser.in_waiting > 0:
+    #         data = ser.readline().decode('utf-8').rstrip()
+    #         print("Received message from UART:", data)
+    #         if data == "start":
+    #             print("Start Algorithm")
+    #             send_start_signal_to_server()
+    #             cube_calculator = CubeCalculator()
+    #             cube_calculator.open_camera_profile('147.88.48.131', 'pren', '463997', 'pren_profile_med')
+    #         if data == "done":
+    #             print("Build is completed")
+    #             send_end_signal_to_server()
 
