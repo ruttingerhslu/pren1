@@ -61,6 +61,7 @@ class CubeCalculator:
                              '@' + ip_address +
                              '/axis-media/media.amp' +
                              '?streamprofile=' + profile)
+        # cap = cv2.VideoCapture('../resources/video_1.mp4')
         if cap is None or not cap.isOpened():
             print('Warning: unable to open video source: ', ip_address)
             return None
@@ -77,7 +78,8 @@ class CubeCalculator:
 
                 self._curr_direction = self.getDirection(angle)
                 self.angle = math.radians(-angle + 45)
-                self.a = self.get_lower_quantile_length()
+                # self.a = self.get_lower_quantile_length()
+                self.a = 90
                 self.get_screen_points()
                 # check if angle is close to 0, 90, etc.
                 if (math.isclose(abs(angle) % 90, 0, abs_tol = 0.5) or math.isclose(angle, 0, abs_tol = 0.5)):
@@ -94,7 +96,7 @@ class CubeCalculator:
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         
-        self.send_config_to_server()
+        # self.send_config_to_server()
 
     def getMeanAngle(self):
         image = self._img
@@ -212,21 +214,66 @@ class CubeCalculator:
         a = self.a / 2 # Half the size to match a 2x2x2 cube
         # Define 8 vertices of a 2x2x2 cube centered at the origin
         vertices = np.array([
-            [a, 0, a],
-            [-a, 0, a],
-            [-a, 0, -a],
-            [a, 0, -a],
-            [a, -2*a, a],
-            [-a, -2*a, a],
-            [-a, -2*a, -a],
-            [a, -2*a, -a],
+            # 1st cube, lower
+            [
+                [2*a, -a, a],
+                [a, -a, 2*a],
+                [0,0,0]
+            ],
+            # 2nd cube, lower
+            [
+                [-a, -a, 2*a],
+                [-2*a, -a, a],
+                [0,0,0]
+            ],
+            # 3rd cube, lower
+            [
+                [-2*a, -a, -a],
+                [-a, -a, -2*a],
+                [0,0,0]
+            ],
+            # 4th cube, lower
+            [
+                [a, -a, -2*a],
+                [2*a, -a, -a],
+                [0,0,0]
+            ],
+            # 5th cube upper
+            [
+                [2*a, -3*a, a],
+                [a, -3*a, 2*a],
+                [a,-4*a,a]
+            ],
+            # 6th cube upper
+            [
+                [-a, -3*a, 2*a],
+                [-2*a, -3*a, a],
+                [-a,-4*a,a]
+            ],
+            # 7th cube upper
+            [
+                [-2*a, -3*a, -a],
+                [-a, -3*a, -2*a],
+                [-a,-4*a,-a]
+            ],
+            # 8th cube upper
+            [
+                [a, -3*a, -2*a],
+                [2*a, -3*a, -a],
+                [a,-4*a,-a]
+            ]
         ])
 
+        rotated_vertices = np.zeros_like(vertices)
+        projected_points = np.zeros((vertices.shape[0], vertices.shape[1], 2))
         # Rotate vertices around the Y-axis
-        rotated_vertices = [self.rotate_point(x, y, z) for x, y, z in vertices]
-
-        # Project 3D points to 2D
-        projected_points = [self.project_point(x, y, z) for x, y, z in rotated_vertices]
+        # rotated_vertices = [self.rotate_point(x, y, z) for x, y, z in vertices]
+        for i, cube in enumerate(vertices):
+            for j, point in enumerate(cube):
+                if not np.array_equal(point, [0, 0, 0]):
+                    rotated_point = self.rotate_point(point[0], point[1], point[2])
+                    rotated_vertices[i][j] = rotated_point
+                    projected_points[i][j] = self.project_point(rotated_point[0], rotated_point[1], rotated_point[2])
 
         return projected_points
 
@@ -235,7 +282,7 @@ class CubeCalculator:
 
         # Manually determine which points are visible based on the cube's orientation and perspective
         # For a 45 degree angle, some points might be hidden
-        screen_points = [
+        cube_points = [
             points[0],
             points[1],
             points[2],
@@ -245,21 +292,62 @@ class CubeCalculator:
             points[6],
             points[7],
         ]
+        # obstructed points indices
         obstructed = []
         match self._curr_direction:
             case 'north':
-                obstructed = [0, 6]
+                obstructed = [
+                    [0, 1, 2],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [0, 1, 2],
+                    []
+                ]
             case 'east':
-                obstructed = [1, 7]
+                obstructed = [
+                    [],
+                    [0, 1, 2],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [0, 1, 2]
+                ]
             case 'south':
-                obstructed = [2, 4]
+                obstructed = [
+                    [],
+                    [],
+                    [0, 1, 2],
+                    [],
+                    [0, 1, 2],
+                    [],
+                    [],
+                    []
+                ]
             case 'west':
-                obstructed = [3, 5]
+                obstructed = [
+                    [],
+                    [],
+                    [],
+                    [0, 1, 2],
+                    [],
+                    [0, 1, 2],
+                    [],
+                    []
+                ]
 
         image_dupe = self._img
-        for i, p in enumerate(screen_points):
-            if i not in obstructed:
-                cv2.putText(image_dupe, str(i), p, cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+        for i, cube in enumerate(cube_points):
+            for j, p in enumerate(cube):
+                if j not in obstructed[i]:
+                    point = (int(p[0]), int(p[1]))
+                    cv2.putText(image_dupe, str(i), point, cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                    # cv2.circle(image_dupe, (point), 5, (0, 255, 255), -1)
+
         cv2.circle(image_dupe, (self._center_x, self._center_y), 5, (0, 255, 255), -1)
 
         cv2.imshow("frame", image_dupe)
@@ -322,7 +410,7 @@ class CubeCalculator:
                 cv2.line(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
             if len(lines) == 2:
                 x1, y1, x2, y2 = lines[0][0]
-                x3, y3, x4, y4 = lines[1][0]    
+                x3, y3, x4, y4 = lines[1][0]
                 det = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
 
             if det != 0:
