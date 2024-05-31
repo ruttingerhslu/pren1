@@ -97,7 +97,7 @@ class CubeCalculator:
         # ellipse window
         height, width = image.shape[:2]
         center = (self._center_x, self._center_y + 50)
-        axes = (330, 230)
+        axes = (330, 240)
         angle = 0
         ellipse_mask = np.zeros((height, width), dtype=np.uint8)
         cv2.ellipse(ellipse_mask, center, axes, angle, 0, 360, 255, -1)
